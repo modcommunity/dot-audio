@@ -13,7 +13,7 @@ extends Node
 ## [/codeblock]
 
 const SECTIONS := 7
-const CHECKS := 55
+const CHECKS := 65
 
 var _passed := 0
 var _failed := 0
@@ -147,6 +147,18 @@ func _test_definitions() -> void:
 	_check(
 		d.validate().ok,
 		"while one naming a file that does not exist validates, because a server has none of them"
+	)
+
+	# A game whose bank is baked arithmetically has no file to name, and this addon
+	# refused it on the first run. game-hungario is that game and is the first thing to
+	# use the sink seam for what it is actually for.
+	var made := DotAudioDef.new()
+	made.id = &"blip"
+	_check(not made.validate().ok, "a sound with no file and no generator is refused")
+	made.generated = true
+	_check(
+		made.validate().ok,
+		"and one the sink makes is not, because the id is then the whole contract"
 	)
 
 	d.pitch_min = 1.4
@@ -283,6 +295,23 @@ func _test_limits() -> void:
 	# point of refusal as well, and a game coming back from a pause is not silent for ever.
 	_check(m.play(&"rifle") != 0, "and a finished sound frees its slot with no frame in between")
 
+	# A caller's pitch is information -- the size of the thing eaten, how charged a shot
+	# was -- and the catalogue's own range is variation. Folding them into one setting
+	# would make a game that wants to say something with pitch give up the variation.
+	null_sink.forget()
+	m.play(&"rifle", 1.0, 0.5)
+	_check(
+		float(null_sink.played()[0]["pitch"]) < 0.7,
+		"a caller's pitch scale multiplies the definition's own roll (%.2f)"
+		% float(null_sink.played()[0]["pitch"])
+	)
+	null_sink.forget()
+	m.play(&"rifle", 1.0, 100.0)
+	_check(
+		float(null_sink.played()[0]["pitch"]) <= 4.0,
+		"and is clamped, because past about four times resampling is an artefact"
+	)
+
 	# 3. Cooldown. A footstep triggered from a physics callback fires twice in a frame,
 	#    and the second is inaudible and still costs a voice.
 	m.listener_position = Vector3.ZERO
@@ -370,6 +399,37 @@ func _test_music_and_ducking() -> void:
 	m.play_music(&"", 0.0)
 	_check(m.music_id() == &"", "and it can be stopped")
 	_check(changes.size() == 2, "announcing that too")
+
+	# `stop_music` is the name a game reaches for, and it had no caller anywhere. Asserted
+	# through the same signal as the line above, because a stop that does not ANNOUNCE is
+	# a menu whose "now playing" never clears.
+	m.play_music(&"theme", 0.0)
+	m.stop_music(0.0)
+	_check(m.music_id() == &"", "stop_music stops it by name as well as by empty id")
+	_check(changes.size() == 4, "and announces the start and the stop")
+
+	# `stop_id` and `played_ids` had no caller either. `stop_id` is the one a game needs
+	# for a looping sound whose handle it did not keep -- an engine, a fire, an alarm --
+	# and it has to stop EVERY copy, not the first.
+	var sink := m.sink as DotAudioSinkNull
+	sink.forget()
+	var first := m.play(&"rifle")
+	var second := m.play(&"rifle")
+	var other := m.play(&"theme")
+	_check(
+		first != 0 and second != 0 and other != 0,
+		"three sounds play"
+	)
+	_check(
+		Array(sink.played_ids()) == ["rifle", "rifle", "theme"],
+		"and the null sink reports what it was asked for, in order"
+	)
+	m.stop_id(&"rifle")
+	_check(
+		not m.is_playing(first) and not m.is_playing(second),
+		"stopping by id stops every copy of it, not the first one it finds"
+	)
+	_check(m.is_playing(other), "and leaves everything else alone")
 
 	# Reference-counted rather than a boolean. The commonest bug in every ducking
 	# implementation is a duck that never lifts because the second holder released first.

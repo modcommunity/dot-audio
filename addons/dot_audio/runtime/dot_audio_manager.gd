@@ -117,24 +117,42 @@ func _exit_tree() -> void:
 # --- Playing ----------------------------------------------------------------
 
 ## Plays a positionless sound.
-func play(id: StringName, volume_scale: float = 1.0) -> int:
-	return _start(id, Vector3.ZERO, false, volume_scale)
+##
+## [param pitch_scale] multiplies whatever the definition's own range rolled.
+##
+## [b]The two pitches are different things and both are wanted.[/b] The catalogue's range
+## is *variation* — it stops a rifle sounding like a metronome and it should be random. A
+## caller's scale is *information*: the size of the thing that was eaten, how charged a
+## shot was, how fast something was going when it hit. Folding them into one setting means
+## a game that wants to say something with pitch has to give up the variation to do it.
+func play(id: StringName, volume_scale: float = 1.0, pitch_scale: float = 1.0) -> int:
+	return _start(id, Vector3.ZERO, false, volume_scale, pitch_scale)
 
 
 ## Plays a sound in the world. A 2D game passes [code]Vector3(x, 0, y)[/code].
 ##
 ## The XZ convention is the family's: dot-npc maps a 2D world onto that plane so its
 ## senses, steering and navigation run unchanged, and one request shape then serves both.
-func play_at(id: StringName, position: Vector3, volume_scale: float = 1.0) -> int:
-	return _start(id, position, true, volume_scale)
+func play_at(
+	id: StringName, position: Vector3, volume_scale: float = 1.0, pitch_scale: float = 1.0
+) -> int:
+	return _start(id, position, true, volume_scale, pitch_scale)
 
 
 ## Plays a sound at a 2D position, on the XZ plane.
-func play_at_2d(id: StringName, position: Vector2, volume_scale: float = 1.0) -> int:
-	return _start(id, Vector3(position.x, 0.0, position.y), true, volume_scale)
+func play_at_2d(
+	id: StringName, position: Vector2, volume_scale: float = 1.0, pitch_scale: float = 1.0
+) -> int:
+	return _start(id, Vector3(position.x, 0.0, position.y), true, volume_scale, pitch_scale)
 
 
-func _start(id: StringName, position: Vector3, positioned: bool, volume_scale: float) -> int:
+func _start(
+	id: StringName,
+	position: Vector3,
+	positioned: bool,
+	volume_scale: float,
+	pitch_scale: float = 1.0
+) -> int:
 	var def := catalogue.find(id) if catalogue != null else null
 	if def == null:
 		# A refusal, not a failure. A client playing a game whose content it has not fully
@@ -177,7 +195,10 @@ func _start(id: StringName, position: Vector3, positioned: bool, volume_scale: f
 		"path": def.pick_path(roll_a),
 		"bus": String(def.bus),
 		"volume_db": def.gain_db + (linear_to_db(volume_scale) if volume_scale > 0.0 else -80.0),
-		"pitch": def.pick_pitch(roll_b),
+		# The rolled variation times what the caller meant by it, clamped to the range a
+		# stream can actually be played at -- past about four times, resampling is an
+		# artefact rather than a pitch.
+		"pitch": clampf(def.pick_pitch(roll_b) * maxf(pitch_scale, 0.01), 0.05, 4.0),
 		"kind": def.kind if positioned else DotAudioDef.Kind.FLAT,
 		"position": position,
 		"unit_size": def.unit_size,
@@ -205,6 +226,20 @@ func stop(handle: int) -> void:
 	_release(handle)
 
 
+## Whether a handle this manager issued is still sounding.
+##
+## On the manager rather than only on the sink, because a game holds a manager and never a
+## sink -- and the asymmetry is the damage: somebody who finds `stop` and no `is_playing`
+## beside it concludes the addon cannot answer the question.
+func is_playing(handle: int) -> bool:
+	return _playing.has(handle)
+
+
+## Stops every copy of [param id], not the first one found.
+##
+## The one a game needs for a sound whose handle it did not keep -- an engine, a fire, an
+## alarm. [code]keys().duplicate()[/code] because [method stop] erases from the dictionary
+## being walked, which is a crash on some sizes and a silent partial stop on others.
 func stop_id(id: StringName) -> void:
 	for h in _playing.keys().duplicate():
 		if _playing[h] == id:

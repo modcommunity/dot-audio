@@ -87,6 +87,10 @@ func missing_files() -> PackedStringArray:
 
 
 func _paths_of(d: DotAudioDef) -> PackedStringArray:
+	if d.generated:
+		# There is no file to be missing. A generated sound reported as missing would put
+		# a game that ships no audio at all permanently in the "content is broken" state.
+		return PackedStringArray()
 	if not d.variants.is_empty():
 		return d.variants
 	return PackedStringArray([d.path]) if d.path != "" else PackedStringArray()

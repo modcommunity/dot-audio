@@ -91,13 +91,29 @@ enum Kind {
 ## Tags a game can filter on — "weapon", "footstep", "ui". Free text.
 @export var tags: Array[StringName] = []
 
+## Whether this sound has no file because the sink makes it.
+##
+## [b]A game whose audio is generated rather than shipped is a real deployment and this
+## addon nearly refused it.[/b] game-hungario bakes its entire bank arithmetically at
+## boot — a sine sweep with a hash-derived noise component under an envelope, ten cues, no
+## files — which is the best thing about that game's audio: it ships nothing and works
+## everywhere. It is also the first thing to use [DotAudioSink] for what the seam is
+## actually for, and [method validate] turned it down on the first run for naming no file.
+##
+## With this set, the id is the whole contract: dot-audio decides whether the sound should
+## be heard, how many at once, how far away it stops mattering and at what pitch, and the
+## sink is what knows how to make it.
+@export var generated: bool = false
+
 
 func validate() -> DotResult:
 	if id == &"":
 		return DotResult.fail(DotError.CODE_INVALID, "a sound with no id")
-	if path.is_empty() and variants.is_empty():
+	if path.is_empty() and variants.is_empty() and not generated:
 		return DotResult.fail(
-			DotError.CODE_INVALID, "'%s' names no file" % id
+			DotError.CODE_INVALID,
+			"'%s' names no file and is not marked generated" % id,
+			"set `generated` when the sink makes the sound rather than loading it"
 		)
 	if pitch_max < pitch_min:
 		return DotResult.fail(

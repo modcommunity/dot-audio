@@ -22,7 +22,7 @@ So `DotAudioCatalogue.validate()` checks everything except whether the file exis
 
 In a headless run `AudioServer.get_mix_rate()` is 44100, the device list is `["Default"]` and the output latency is 0.0. **Only `get_driver_name()` says `"Dummy"`.** A capability check built on any of the others passes on a machine with no audio at all, and the symptom is silence for ever with nothing reporting a problem.
 
-That is why there is a `DotAudioSink` interface. `DotAudioSinkNull` is not a mock — the real catalogue, the real culling, the real cooldowns, the real concurrency caps and the real music state machine all run above it, and only the four lines that would create an `AudioStreamPlayer` are replaced. A headless suite is then a test of the system rather than of a stand-in, and a dedicated server can decide what its clients are told to play.
+That is why there is a `DotAudioSink` interface. `DotAudioSinkNull` is not a mock. The real catalogue, the real culling, the real cooldowns, the real concurrency caps and the real music state machine all run above it, and only the four lines that would create an `AudioStreamPlayer` are replaced. A headless suite is then a test of the system rather than of a stand-in, and a dedicated server can decide what its clients are told to play.
 
 ## A volume slider is not decibels
 
@@ -38,7 +38,7 @@ Mapping a 0..1 slider straight onto `volume_db`, even scaled to -60..0, gives a 
 | `cooldown_ms` | A footstep triggered from a physics callback fires twice in a frame, and the second one is inaudible and still costs a voice. |
 | `max_distance` | A cull, not a curve. A sound at 400 metres attenuated to inaudible still costs a stream load, a voice and a position update every frame. |
 
-And the pool: `DotAudioSinkGodot` creates `voices` players once and never frees them. The obvious spelling — create, play, `queue_free` on finished — has no ceiling, and a firefight is a hundred nodes created and destroyed per second, which on the web is a visible hitch every time anything happens. When the pool is full the **lowest-priority** voice is stolen, and if nothing is lower the new sound is refused: a gunshot losing to a footstep because the footstep started first is the failure mode of every fixed pool with no priority.
+And the pool: `DotAudioSinkGodot` creates `voices` players once and never frees them. The obvious spelling, which is to create, play and `queue_free` on finished, has no ceiling, and a firefight is a hundred nodes created and destroyed per second, which on the web is a visible hitch every time anything happens. When the pool is full the **lowest-priority** voice is stolen, and if nothing is lower the new sound is refused: a gunshot losing to a footstep because the footstep started first is the failure mode of every fixed pool with no priority.
 
 ## Using it
 
@@ -55,7 +55,7 @@ audio.play_music(&"combat", 1.5)     # crossfade; asking for what is playing doe
 audio.duck(&"radio")                 # reference-counted, so two ducks do not fight
 ```
 
-Hand it dot-randomness' stream and a shot's pitch and variant are the same on the server and on every client watching — which is what makes an audio bug reproducible:
+Hand it dot-randomness' stream and a shot's pitch and variant are the same on the server and on every client watching, which is what makes an audio bug reproducible:
 
 ```gdscript
 audio.roll_source = rng.stream(&"audio")

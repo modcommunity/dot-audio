@@ -18,6 +18,18 @@ A sound is an id and a **path**, never a loaded `AudioStream`. Two reasons, and 
 
 So `DotAudioCatalogue.validate()` checks everything except whether the file exists, and `missing_files()` is a separate question, asked by the client that is about to need them.
 
+It still ships no audio, and a game with no files can still make a noise. `DotAudioSynth` bakes short sounds out of a sine sweep, a deterministic hash and an attack-decay envelope, and `DotAudioSinkGodot.bank` holds them — **behind** the filesystem, so the moment a real file exists at the path a def already names, that file wins and nobody edits a line:
+
+```gdscript
+var bank := DotAudioSynth.bank(catalogue, {
+    &"fire_rifle": DotAudioSynth.Voice.SHOT,
+    &"hit_marker": DotAudioSynth.Voice.BLIP,
+})
+(audio.sink as DotAudioSinkGodot).bank = bank
+```
+
+Nothing about it is random: the grit comes from a hash rather than `randf()`, so the bank is byte-identical on every machine and every run. That is what makes it something a test can assert about rather than listen to.
+
 ## The engine reports a working sound card when there is none
 
 In a headless run `AudioServer.get_mix_rate()` is 44100, the device list is `["Default"]` and the output latency is 0.0. **Only `get_driver_name()` says `"Dummy"`.** A capability check built on any of the others passes on a machine with no audio at all, and the symptom is silence for ever with nothing reporting a problem.

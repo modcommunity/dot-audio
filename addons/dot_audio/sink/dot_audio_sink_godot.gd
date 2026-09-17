@@ -20,6 +20,24 @@ var host: Node = null
 
 var capacity: int = 32
 
+## Streams to fall back on when a def's path resolves to nothing.
+##
+## [code]{String path: AudioStream}[/code] and [code]{StringName id: AudioStream}[/code],
+## in one dictionary — a path entry stands in for one variant, an id entry for the def as
+## a whole. [DotAudioSynth.bank] builds both; anything that can produce an [AudioStream]
+## can fill it, and nothing here cares where one came from.
+##
+## [b]It is consulted AFTER the filesystem, and that order is the design.[/b] A deployment
+## with no audio files hears the stand-ins; the moment a real file exists at the path the
+## def already names, that file wins and the entry beside it goes quiet without anybody
+## editing a line. A bank that outranked a shipped asset would be a placeholder somebody
+## has to remember to remove, which is how placeholders ship.
+##
+## [b]Empty by default, so this changes nothing for anyone who does not set it.[/b] The
+## path above is untouched: a game that ships its audio never allocates this dictionary and
+## never does a lookup in it.
+var bank: Dictionary = {}
+
 var _free: Array[Node] = []
 var _busy: Dictionary = {}
 var _next := 1
@@ -35,16 +53,26 @@ func play(request: Dictionary) -> int:
 		return 0
 
 	var path := str(request.get("path", ""))
-	if path.is_empty() or not ResourceLoader.exists(path):
+	var id := StringName(request.get("id", ""))
+
+	var stream: AudioStream = null
+
+	if not path.is_empty() and ResourceLoader.exists(path):
+		stream = load(path) as AudioStream
+
+	# Only once the filesystem has had its turn. See `bank`.
+	if stream == null and not bank.is_empty():
+		if bank.has(path):
+			stream = bank[path] as AudioStream
+		elif bank.has(id):
+			stream = bank[id] as AudioStream
+
+	if stream == null:
 		# Not an error. A client that has not downloaded a pack yet, or a deployment that
 		# ships no audio at all, is a legitimate configuration -- and an effect never
 		# changes the simulation, so dropping one is always safe. Logged at debug so it is
 		# findable and does not turn a soundless build into a wall of red.
-		DotLog.debug("audio", "no such stream", {"path": path})
-		return 0
-
-	var stream := load(path) as AudioStream
-	if stream == null:
+		DotLog.debug("audio", "no such stream", {"path": path, "id": String(id)})
 		return 0
 
 	var kind := int(request.get("kind", DotAudioDef.Kind.FLAT))
@@ -179,4 +207,7 @@ func usage() -> Dictionary:
 
 
 func sink_name() -> String:
-	return "godot"
+	# The bank is named here because "the sound I expected was a different sound" is
+	# otherwise indistinguishable from "the file I added is not being read", and this
+	# string is what a `describe()` and a bug report carry.
+	return "godot" if bank.is_empty() else "godot+bank(%d)" % bank.size()

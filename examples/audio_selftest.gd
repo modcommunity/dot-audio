@@ -12,8 +12,8 @@ extends Node
 ## godot --headless --path . res://examples/audio_selftest.tscn
 ## [/codeblock]
 
-const SECTIONS := 7
-const CHECKS := 65
+const SECTIONS := 8
+const CHECKS := 85
 
 var _passed := 0
 var _failed := 0
@@ -39,6 +39,7 @@ func _run() -> void:
 	await _test_limits()
 	_test_stealing()
 	_test_music_and_ducking()
+	_test_synth()
 
 	_line("")
 	_line("%d sections, %d passed, %d failed" % [_section_count, _passed, _failed])
@@ -448,6 +449,152 @@ func _test_music_and_ducking() -> void:
 	_check(m.describe()["device"] == false, "honestly, including about the device")
 
 	m.queue_free()
+
+
+func _synth_catalogue() -> DotAudioCatalogue:
+	var c := DotAudioCatalogue.new()
+
+	# Two variants, because the bank promises to keep them apart and a catalogue whose
+	# defs all have one path cannot show that it does.
+	var rifle := DotAudioDef.new()
+	rifle.id = &"synth_rifle"
+	rifle.path = "res://fixtures/rifle_a.ogg"
+	rifle.variants = PackedStringArray(["res://fixtures/rifle_b.ogg"])
+	c.add(rifle)
+
+	var step := DotAudioDef.new()
+	step.id = &"synth_step"
+	step.path = "res://fixtures/step.ogg"
+	c.add(step)
+
+	return c
+
+
+func _test_synth() -> void:
+	_section("A synthesised stand-in, and the order it loses to a real file in")
+
+	var shot := DotAudioSynth.voice(DotAudioSynth.Voice.SHOT)
+	_check(shot != null and not shot.data.is_empty(), "a voice bakes to bytes")
+	_check(
+		(
+			shot.format == AudioStreamWAV.FORMAT_16_BITS
+			and not shot.stereo
+			and shot.mix_rate == DotAudioSynth.RATE
+		),
+		"16-bit mono at the documented rate"
+	)
+
+	var frames := shot.data.size() / 2
+	var seconds := float(frames) / float(DotAudioSynth.RATE)
+	var wanted: float = DotAudioSynth.RECIPES[DotAudioSynth.Voice.SHOT][2]
+	_check(absf(seconds - wanted) < 0.01, "and is as long as its recipe says")
+
+	_check(
+		DotAudioSynth.voice(DotAudioSynth.Voice.SHOT).data == shot.data,
+		"the same voice bakes byte-identical twice, so two clients hear one shot"
+	)
+
+	var every := true
+	for v in DotAudioSynth.RECIPES.keys():
+		var one := DotAudioSynth.voice(v)
+		if one == null or one.data.size() < 2:
+			every = false
+	_check(every, "every voice in the table bakes")
+
+	# The envelope has to reach zero by the last frame. A buffer that stops mid-cycle is a
+	# click on the end of every sound, which is the difference between placeholder audio
+	# that is rough and placeholder audio nobody will leave switched on.
+	var lo := shot.data[shot.data.size() - 2]
+	var hi := shot.data[shot.data.size() - 1]
+	var last := (hi << 8) | lo
+	if last >= 32768:
+		last -= 65536
+	_check(absi(last) < 400, "and decays to silence rather than stopping mid-cycle")
+
+	_check(
+		(
+			DotAudioSynth.bake(700.0, 90.0, 0.1, 0.5, 0.8, 0.004, 1).data
+			!= DotAudioSynth.bake(700.0, 90.0, 0.1, 0.5, 0.8, 0.004, 2).data
+		),
+		"a different salt is a different noise"
+	)
+
+	var long_one := DotAudioSynth.bake(400.0, 200.0, 60.0)
+	_check(
+		float(long_one.data.size() / 2) / float(DotAudioSynth.RATE) <= 4.01,
+		"an absurd length is clamped rather than allocating a minute of placeholder"
+	)
+
+	# --- The bank -----------------------------------------------------------
+
+	var cat := _synth_catalogue()
+	var bank := DotAudioSynth.bank(
+		cat,
+		{
+			&"synth_rifle": DotAudioSynth.Voice.SHOT,
+			&"synth_step": DotAudioSynth.Voice.STEP,
+			&"not_in_the_catalogue": DotAudioSynth.Voice.CLICK,
+		}
+	)
+
+	_check(bank.has(&"synth_rifle"), "the bank answers by id")
+	_check(bank.has("res://fixtures/rifle_a.ogg"), "and by the path the def names")
+	_check(
+		(
+			bank.has("res://fixtures/rifle_b.ogg")
+			and (bank["res://fixtures/rifle_b.ogg"] as AudioStreamWAV).data
+				!= (bank["res://fixtures/rifle_a.ogg"] as AudioStreamWAV).data
+		),
+		"and a second variant is a different noise, so a rifle is not a metronome"
+	)
+	_check(not bank.has(&"not_in_the_catalogue"), "an id the catalogue does not have is skipped")
+	_check(bank.has(&"synth_step"), "and the rest of the bank is still built")
+
+	# --- The sink's resolution order ----------------------------------------
+
+	var host := Node.new()
+	add_child(host)
+
+	var sink := DotAudioSinkGodot.new(host, 8)
+
+	var missing := {
+		"id": "synth_rifle",
+		"path": "res://fixtures/rifle_a.ogg",
+		"kind": DotAudioDef.Kind.FLAT,
+		"priority": 50,
+	}
+	_check(sink.play(missing) == 0, "with neither a file nor a bank, nothing plays")
+	_check(sink.sink_name() == "godot", "and the sink says it has no bank")
+
+	sink.bank = bank
+	_check(sink.play(missing) != 0, "with a bank, the same request plays")
+	_check(sink.sink_name().begins_with("godot+bank"), "and says so, for a bug report")
+
+	var by_id := {"id": "synth_step", "path": "", "kind": DotAudioDef.Kind.FLAT, "priority": 50}
+	_check(sink.play(by_id) != 0, "a def with no path at all resolves by id")
+
+	# A real file has to win, or the bank is a placeholder somebody has to remember to
+	# remove. user:// rather than res://, because a suite cannot write into its own build.
+	var real := DotAudioSynth.bake(300.0, 300.0, 0.05, 0.2, 0.0)
+	var probe_path := "user://dot_audio_probe.tres"
+	var saved := ResourceSaver.save(real, probe_path) == OK
+	sink.bank[probe_path] = DotAudioSynth.voice(DotAudioSynth.Voice.BOOM)
+
+	var over := {"id": "probe", "path": probe_path, "kind": DotAudioDef.Kind.FLAT, "priority": 50}
+	var handle := sink.play(over)
+	var played: AudioStream = null
+	for child in host.get_children():
+		if int(child.get_meta(&"dot_audio_handle", 0)) == handle:
+			played = child.get("stream") as AudioStream
+
+	_check(saved and handle != 0, "a def whose path really exists plays")
+	_check(
+		played is AudioStreamWAV and (played as AudioStreamWAV).data == real.data,
+		"and it is the FILE that plays, not the stand-in sitting at the same path"
+	)
+
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(probe_path))
+	host.queue_free()
 
 
 # --- Harness ---------------------------------------------------------------

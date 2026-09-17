@@ -42,6 +42,7 @@ A smaller one, from the same run: `SceneTree.process_frame` is emitted **before*
 | `DotAudioSinkNull` | Records what it would have played. The server's sink and the suite's. |
 | `DotAudioMixer` | The sliders, and the `linear_to_db` curve. A `DotConfig`. |
 | `DotAudioManager` | Ids in, limits applied, requests out. |
+| `DotAudioSynth` | Sound made of arithmetic, for a deployment that has no audio files yet. |
 
 ## Decisions
 
@@ -69,9 +70,19 @@ When the pool is full the lowest-priority voice below the incoming one is stoppe
 
 An unknown id, a file that is not there, a pack still downloading: all refusals, all logged at debug, none of them errors. **Audio never changes the simulation**, which is exactly the property that makes dropping it safe — the same rule dot-fx runs on. A red line per shot on a client whose content is still arriving is how a real error stops being read.
 
+### 7. The synthesiser is consulted after the filesystem, never before
+
+`DotAudioSynth` bakes an `AudioStreamWAV` from a handful of numbers and `DotAudioSinkGodot.bank` holds the result, keyed by path and by id. The order matters more than anything else about it: the sink loads the def's path first and only falls through to the bank when there is no file there. A stand-in that outranked a shipped asset would be a placeholder somebody has to remember to remove, which is how placeholders ship.
+
+It does not break "ships no audio". That rule is about what a `DotAudioDef` may hold — a catalogue that carries streams cannot describe delivered content and cannot be validated on a server that does not have the files — and a synthesiser holds nothing. What ships is the arithmetic.
+
+**It is in the addon because it was about to be written twice.** game-hungario had a sine-sweep-plus-noise baker of its own, and four other games had complete catalogues pointing at files nobody had produced. The numbers worth arguing about — what a shot sounds like against what a footstep sounds like — are the same numbers in all of them, so `Voice` names roles rather than sounds: a game says "this is the shot" and gets whatever this addon currently thinks a shot is.
+
+Which voice stands in for which id stays with the **game**, in its own `sound_recipes()`, for the same reason the cull distances are the game's. An addon that inferred "rail sounds tonal" from an id called `fire_rail` would be an addon guessing at vocabulary it does not own.
+
 ## Things deliberately not here
 
-- **Any audio.** dot-ui's rule.
+- **Any audio.** dot-ui's rule. `DotAudioSynth` is arithmetic, not a bank, and it is a stand-in rather than an asset library — it has thirteen voices and no way to author a fourteenth from data, on purpose.
 - **DSP and effect design.** Reverb zones, filters and sends are the engine's buses, and a game that wants them configures the bus layout the engine already has.
 - **Per-voice fades.** The shipped fade goes through the bus, which is what almost every game wants and costs nothing per voice. `_ramp` is the subclass point for a game that genuinely needs sample-accurate stem control.
 - **A music stem player.** Layered stems that stay in phase need one stream and a mix, not several players, and that is a different class. `play_music` crossfades between whole tracks.
@@ -87,4 +98,4 @@ done
 timeout 120 godot --headless --path . res://examples/audio_selftest.tscn
 ```
 
-7 sections, 55 checks, none of which needs a sound card. `CHECKS` is a total as well as a section count: a script error inside a test aborts *that test*, not the run, and the section counter cannot see it because the section has already announced itself.
+8 sections, 85 checks, none of which needs a sound card. `CHECKS` is a total as well as a section count: a script error inside a test aborts *that test*, not the run, and the section counter cannot see it because the section has already announced itself.

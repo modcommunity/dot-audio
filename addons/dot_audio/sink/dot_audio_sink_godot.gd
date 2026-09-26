@@ -42,6 +42,9 @@ var _free: Array[Node] = []
 var _busy: Dictionary = {}
 var _next := 1
 
+## Looping copies of streams, keyed by the stream they were made from. See [method _looped].
+var _loop_copies: Dictionary = {}
+
 
 func _init(p_host: Node = null, p_capacity: int = 32) -> void:
 	host = p_host
@@ -75,6 +78,14 @@ func play(request: Dictionary) -> int:
 		DotLog.debug("audio", "no such stream", {"path": path, "id": String(id)})
 		return 0
 
+	# [b]Honoured here, and it was not until 2026-09-25.[/b] The manager has always put
+	# `looping` in the request and nothing read it, so a looping def — an engine hum, an
+	# ambience bed — played once and stopped, and a game built its engine as a pulse to
+	# work round it.
+	var looping := bool(request.get("looping", false))
+	if looping:
+		stream = _looped(stream)
+
 	var kind := int(request.get("kind", DotAudioDef.Kind.FLAT))
 	var player := _take(kind, int(request.get("priority", 50)))
 	if player == null:
@@ -106,10 +117,64 @@ func play(request: Dictionary) -> int:
 		"player": player,
 		"priority": int(request.get("priority", 50)),
 		"id": str(request.get("id", "")),
+		"looping": looping,
 	}
 	player.set_meta(&"dot_audio_handle", handle)
 	player.play()
 	return handle
+
+
+## A copy of [param stream] that loops, or [param stream] itself when it already does.
+##
+## [b]A copy, never the stream itself.[/b] What [code]load()[/code] returns is the cached
+## resource every other caller of that path shares, and a [member bank] entry is shared by
+## every play of that id — so setting [code]loop_mode[/code] on it in place would make the
+## next ONE-SHOT of the same sound loop for ever. One copy per source, kept, so a looping
+## sound started a hundred times is one duplicate rather than a hundred.
+##
+## [b]Natively where the stream can[/b]: [AudioStreamWAV] by its loop points (a baked
+## synth voice is one), and anything with a [code]loop[/code] property (Ogg Vorbis, MP3).
+## Anything else is returned unchanged and loops by restarting on
+## [signal AudioStreamPlayer.finished] — see [method _on_finished] — which costs a mix
+## buffer of silence at the seam and is the answer for a stream type this does not know.
+func _looped(stream: AudioStream) -> AudioStream:
+	if _loop_copies.has(stream):
+		return _loop_copies[stream] as AudioStream
+
+	var out: AudioStream = stream
+
+	if stream is AudioStreamWAV:
+		var wav := stream as AudioStreamWAV
+		if wav.loop_mode == AudioStreamWAV.LOOP_DISABLED:
+			var frames := _wav_frames(wav)
+			if frames > 0:
+				var copy := wav.duplicate() as AudioStreamWAV
+				copy.loop_mode = AudioStreamWAV.LOOP_FORWARD
+				copy.loop_begin = 0
+				copy.loop_end = frames
+				out = copy
+	elif "loop" in stream and not bool(stream.get("loop")):
+		var copy := stream.duplicate() as AudioStream
+		copy.set("loop", true)
+		out = copy
+
+	_loop_copies[stream] = out
+	return out
+
+
+## How many sample frames a WAV holds, or 0 when that cannot be known from its bytes.
+##
+## Zero sends it to the restart fallback rather than guessing: a loop end past the data
+## reads past the buffer and one short of it clips the tail every lap.
+static func _wav_frames(wav: AudioStreamWAV) -> int:
+	var channels := 2 if wav.stereo else 1
+	match wav.format:
+		AudioStreamWAV.FORMAT_8_BITS:
+			return wav.data.size() / channels
+		AudioStreamWAV.FORMAT_16_BITS:
+			return wav.data.size() / (2 * channels)
+		_:
+			return int(round(wav.get_length() * float(wav.mix_rate)))
 
 
 func _take(kind: int, priority: int) -> Node:
@@ -163,6 +228,15 @@ func _kind_of(player: Node) -> int:
 
 func _on_finished(player: Node) -> void:
 	var handle := int(player.get_meta(&"dot_audio_handle", 0))
+
+	# A looping sound whose stream could not be told to loop. It stays busy under the
+	# same handle, so the manager's concurrency count and the caller's handle both stay
+	# right, and it goes round again. See [method _looped].
+	var entry: Dictionary = _busy.get(handle, {})
+	if bool(entry.get("looping", false)) and entry.get("player") == player:
+		player.call("play")
+		return
+
 	_busy.erase(handle)
 	# Returned to the pool rather than freed. The whole reason the pool exists.
 	if not _free.has(player):

@@ -13,7 +13,7 @@ extends Node
 ## [/codeblock]
 
 const SECTIONS := 8
-const CHECKS := 85
+const CHECKS := 91
 
 var _passed := 0
 var _failed := 0
@@ -594,6 +594,58 @@ func _test_synth() -> void:
 	)
 
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(probe_path))
+
+	# --- Looping ----------------------------------------------------------------
+	# The manager has always put `looping` in the request; until 2026-09-25 the sink never
+	# read it, so a looping def played once. Asserted on the stream the player was handed
+	# rather than by waiting for it to end, because the dummy driver's clock is not one a
+	# suite should lean on.
+	var stream_of := func(h: int) -> AudioStream:
+		for child in host.get_children():
+			if int(child.get_meta(&"dot_audio_handle", 0)) == h:
+				return child.get("stream") as AudioStream
+		return null
+
+	var hum := {"id": "synth_step", "path": "", "kind": DotAudioDef.Kind.FLAT, "priority": 50, "looping": true}
+	var hum_handle := sink.play(hum)
+	var hum_stream := stream_of.call(hum_handle) as AudioStreamWAV
+	var source := bank[&"synth_step"] as AudioStreamWAV
+	_check(
+		hum_stream != null and hum_stream.loop_mode == AudioStreamWAV.LOOP_FORWARD
+		and hum_stream.loop_begin == 0 and hum_stream.loop_end == source.data.size() / 2,
+		"a looping request plays a stream that loops, over every frame it has"
+	)
+	_check(
+		source.loop_mode == AudioStreamWAV.LOOP_DISABLED,
+		"and the bank's own stream is untouched, so the next one-shot of it does not loop"
+	)
+	var once := sink.play({"id": "synth_step", "path": "", "kind": DotAudioDef.Kind.FLAT, "priority": 50})
+	_check(
+		stream_of.call(once) == source,
+		"a one-shot of the same sound still plays the one-shot"
+	)
+	_check(
+		stream_of.call(sink.play(hum)) == hum_stream,
+		"and a second loop of it reuses the one copy rather than duplicating per play"
+	)
+
+	# A stream type that cannot be told to loop goes round by restarting on `finished`.
+	sink.bank[&"generated"] = AudioStreamGenerator.new()
+	var gen := {"id": "generated", "path": "", "kind": DotAudioDef.Kind.FLAT, "priority": 50, "looping": true}
+	var gen_handle := sink.play(gen)
+	var gen_player: Node = null
+	for child in host.get_children():
+		if int(child.get_meta(&"dot_audio_handle", 0)) == gen_handle:
+			gen_player = child
+	if gen_player != null:
+		gen_player.emit_signal("finished")
+	_check(
+		gen_handle != 0 and sink.is_playing(gen_handle),
+		"and a stream that cannot loop natively restarts under the same handle when it ends"
+	)
+	sink.stop(gen_handle)
+	_check(not sink.is_playing(gen_handle), "until it is stopped")
+
 	host.queue_free()
 
 

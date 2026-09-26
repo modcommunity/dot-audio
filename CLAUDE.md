@@ -31,6 +31,8 @@ The reason nobody added it was not difficulty. It is that the obvious implementa
 
 A smaller one, from the same run: `SceneTree.process_frame` is emitted **before** `Node._process`, not after. A test that awaits one frame and expects a node's `_process` to have run is a test that will pass or fail on scheduling. There is no await in that section at all now.
 
+**`looping` was in every request and no sink read it** (found 2026-09-25, by a game). `DotAudioManager` has always put `def.looping` in the play request, and `DotAudioSinkGodot.play()` never looked — so a looping def, an engine hum or an ambience bed, played once and stopped, and the null sink recorded a request that looked right. mg-buses-from-hell built its bus engine as a repeating pulse rather than wait. The sink now loops natively where the stream can — an `AudioStreamWAV` by its loop points (every synth voice is one), anything with a `loop` property (Ogg, MP3) — and otherwise restarts the player on `finished` under the same handle. **It loops a copy, never the stream:** `load()` returns the cached resource every caller of that path shares and a bank entry is shared by every play of its id, so setting `loop_mode` in place would make the next one-shot of that sound loop for ever. One copy per source stream, kept. The suite asserts the loop points, that the bank's own stream is untouched, and the restart fallback.
+
 ## The pieces
 
 | | |
@@ -98,4 +100,4 @@ done
 timeout 120 godot --headless --path . res://examples/audio_selftest.tscn
 ```
 
-8 sections, 85 checks, none of which needs a sound card. `CHECKS` is a total as well as a section count: a script error inside a test aborts *that test*, not the run, and the section counter cannot see it because the section has already announced itself.
+8 sections, 91 checks, none of which needs a sound card. It prints "N ObjectDB instances were leaked at exit" and "1 resources still in use" on every green run, and both predate the looping checks: `--verbose` names them as `AudioStreamPlaybackWAV` / `AudioStreamGeneratorPlayback` objects — one per `play()` the synth section makes — which the engine's dummy driver creates and never mixes, so nothing releases them. Stopping every voice and freeing the host before exit does not change the count. It was 6 before the looping section and is 12 with it, because that section plays six more sounds. `CHECKS` is a total as well as a section count: a script error inside a test aborts *that test*, not the run, and the section counter cannot see it because the section has already announced itself.

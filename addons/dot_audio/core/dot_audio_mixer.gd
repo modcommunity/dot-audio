@@ -94,7 +94,15 @@ func _create_bus(bus_name: String) -> int:
 	if bus_name == "Master":
 		return 0
 	var idx := AudioServer.bus_count
-	AudioServer.add_bus(idx)
+	# [b]Grown by bus_count, never by add_bus(), and that is the whole of the browser's
+	# sound.[/b] On a web build without threads (sample playback) add_bus() reaches
+	# Godot's JS `Bus.addAt`, whose `Bus.move` splices the new bus in at `toIndex - 1` --
+	# ahead of Master. The set_bus_send to "Master" below then unplugs the real Master
+	# from the AudioContext's destination and wires the buses into a loop: every sound
+	# starts and none reaches the speakers (4.7.2, seen in Chromium's Web Audio graph).
+	# Setting the count takes the sample-bus-count path, which appends in place. Native
+	# builds never run that JS, which is why only the browser was silent.
+	AudioServer.bus_count = idx + 1
 	AudioServer.set_bus_name(idx, bus_name)
 	AudioServer.set_bus_send(idx, "Master")
 	return idx

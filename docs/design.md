@@ -27,7 +27,7 @@ The obvious implementation (`AudioStreamPlayer.new()`, `play()`, `queue_free()` 
 | `DotAudioSinkGodot` | A fixed pool with priority stealing, looping, the synth `bank`. |
 | `DotAudioSinkNull` | Records what it would have played. |
 | `DotAudioMixer` | The sliders, and the `linear_to_db` curve. A `DotConfig`. |
-| `DotAudioManager` | Ids in, limits applied, requests out. |
+| `DotAudioManager` | Ids in, limits applied, requests out; `move`, `shape` and `stop` a playing voice by handle. |
 | `DotAudioSynth` | Sound made of arithmetic, for a deployment with no audio files yet. |
 
 ## Decisions
@@ -70,10 +70,14 @@ Concurrency counts drop when the sink reports a sound finished. `_process` does 
 
 It does not break "ships no audio": that rule is about what a `DotAudioDef` may hold, and a synthesiser holds nothing. It is in the addon because it was about to be written in every game; the numbers worth arguing about (a shot against a footstep) are the same everywhere, so `Voice` names roles rather than sounds. Which voice stands in for which id stays with the **game**, in its own `sound_recipes()`, for the same reason the cull distances are the game's: an addon that inferred "rail sounds tonal" from an id called `fire_rail` would be guessing at vocabulary it does not own.
 
+### A playing voice is shaped in play()'s units
+
+`DotAudioManager.shape(handle, volume_scale, pitch_scale)` changes a playing voice's loudness and pitch without restarting it, for a sound whose level is information every frame (an engine following speed and throttle). The scales mean what they mean to `play()`: a linear scale on the def's `gain_db` and a multiplier on the pitch the def rolled at the start, both remembered per handle, so `play(id, v, p)` then `shape(h, v, p)` changes nothing. A pass-through of raw decibels to the sink would make every caller re-add the catalogue's gain and drop its variation each frame. It returns false for a voice that has ended or been stolen, so a caller keeping a loop alive starts it again, and it reaps the ended one on the spot for the reason refusal does. The sink side is `DotAudioSink.shape(handle, volume_db, pitch)`, a no-op on the base class so a sink written before API level 2 still loads; `voice(handle)` reads a voice back (from the engine's own player on the Godot sink, which is what a probe under xvfb wants). Added after mg-dangerous-delivery had to subclass the Godot sink and read its private pool to do this.
+
 ## Deliberately not here
 
 - **Any audio.** dot-ui's rule. `DotAudioSynth` is arithmetic and a stand-in, not an asset library: thirteen voices and no way to author a fourteenth from data, on purpose.
 - **DSP and effect design.** Reverb zones, filters and sends are the engine's buses.
-- **Per-voice fades.** The shipped fade goes through the bus, which is what almost every game wants and costs nothing per voice. `_ramp` is the subclass point for sample-accurate stem control.
+- **Per-voice fades.** The shipped fade goes through the bus, which is what almost every game wants and costs nothing per voice. A game that eases a voice itself calls `shape()` each frame; `_ramp` is the subclass point for sample-accurate stem control.
 - **A music stem player.** Layered stems in phase need one stream and a mix, which is a different class. `play_music` crossfades whole tracks.
 - **Voice chat.** dot-voice: capture, codecs, jitter buffers and routing are a different problem.

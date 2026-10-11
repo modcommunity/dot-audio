@@ -65,6 +65,9 @@ var roll_source: Object = null
 var sink: DotAudioSink = null
 
 var _playing: Dictionary = {}
+## handle -> [code]{gain_db, pitch}[/code]: the def's gain and the pitch it rolled at the
+## start, which [method shape] applies a caller's scales on top of. See [method shape].
+var _voice_base: Dictionary = {}
 var _concurrent: Dictionary = {}
 var _last_started_ms: Dictionary = {}
 var _music_handle := 0
@@ -190,15 +193,13 @@ func _start(
 
 	var roll_a := _roll()
 	var roll_b := _roll()
+	var rolled_pitch := def.pick_pitch(roll_b)
 	var request := {
 		"id": String(id),
 		"path": def.pick_path(roll_a),
 		"bus": String(def.bus),
-		"volume_db": def.gain_db + (linear_to_db(volume_scale) if volume_scale > 0.0 else -80.0),
-		# The rolled variation times what the caller meant by it, clamped to the range a
-		# stream can actually be played at -- past about four times, resampling is an
-		# artefact rather than a pitch.
-		"pitch": clampf(def.pick_pitch(roll_b) * maxf(pitch_scale, 0.01), 0.05, 4.0),
+		"volume_db": _volume_db(def.gain_db, volume_scale),
+		"pitch": _pitch(rolled_pitch, pitch_scale),
 		"kind": def.kind if positioned else DotAudioDef.Kind.FLAT,
 		"position": position,
 		"unit_size": def.unit_size,
@@ -213,6 +214,7 @@ func _start(
 		return 0
 
 	_playing[handle] = id
+	_voice_base[handle] = {"gain_db": def.gain_db, "pitch": rolled_pitch}
 	_concurrent[id] = int(_concurrent.get(id, 0)) + 1
 	_last_started_ms[id] = now
 	played.emit(id, handle, &"ok")
@@ -249,6 +251,7 @@ func stop_id(id: StringName) -> void:
 func stop_all() -> void:
 	sink.stop_all()
 	_playing.clear()
+	_voice_base.clear()
 	_concurrent.clear()
 	_music_handle = 0
 	_music_id = &""
@@ -260,9 +263,64 @@ func move(handle: int, position: Vector3) -> void:
 		sink.move(handle, position)
 
 
+## Changes a playing sound's loudness and pitch without restarting it.
+##
+## [param volume_scale] and [param pitch_scale] mean exactly what they mean to [method play]:
+## a linear scale on the def's [code]gain_db[/code], and a multiplier on the pitch the def's
+## range ROLLED when this handle started. So [code]play(id, v, p)[/code] followed by
+## [code]shape(h, v, p)[/code] changes nothing, and an engine shaped every frame keeps both
+## its catalogue gain and its variation instead of having them overwritten by raw numbers.
+## That is why this is not a pass-through to [method DotAudioSink.shape]: a caller handing
+## the sink decibels would have to know the def's gain to stay at the level it started at.
+##
+## [b]Returns whether there was a voice to shape.[/b] False for a handle this manager did
+## not issue, one that has ended, or one stolen by a more important sound; a caller keeping
+## a loop alive starts it again on false (or on [method is_playing]) rather than shaping
+## nothing for the rest of the session. A sink that cannot shape (one written before API
+## level 2) leaves the voice at its starting level and this still answers true.
+func shape(handle: int, volume_scale: float = 1.0, pitch_scale: float = 1.0) -> bool:
+	if not _playing.has(handle):
+		return false
+	if not sink.is_playing(handle):
+		# Ended on its own since the last reap. Released here rather than left for
+		# `_process`, which does not run while the tree is paused.
+		_release(handle)
+		return false
+	var base: Dictionary = _voice_base.get(handle, {"gain_db": 0.0, "pitch": 1.0})
+	sink.shape(
+		handle,
+		_volume_db(float(base["gain_db"]), volume_scale),
+		_pitch(float(base["pitch"]), pitch_scale)
+	)
+	return true
+
+
+## What a playing voice is set to, in the sink's units: [code]{volume_db, pitch,
+## playing}[/code], or empty for a handle that is not this manager's or not playing.
+##
+## On the manager for the reason [method is_playing] is: a game holds a manager, not a sink.
+func voice(handle: int) -> Dictionary:
+	if not _playing.has(handle):
+		return {}
+	return sink.voice(handle)
+
+
+## A def's gain plus a caller's linear scale. Zero or below is silence, not log(0).
+static func _volume_db(gain_db: float, volume_scale: float) -> float:
+	return gain_db + (linear_to_db(volume_scale) if volume_scale > 0.0 else -80.0)
+
+
+## The rolled variation times what the caller meant by it, clamped to the range a stream can
+## actually be played at -- past about four times, resampling is an artefact rather than a
+## pitch.
+static func _pitch(rolled: float, pitch_scale: float) -> float:
+	return clampf(rolled * maxf(pitch_scale, 0.01), 0.05, 4.0)
+
+
 func _release(handle: int) -> void:
 	var id: StringName = _playing.get(handle, &"")
 	_playing.erase(handle)
+	_voice_base.erase(handle)
 	if id != &"":
 		_concurrent[id] = maxi(0, int(_concurrent.get(id, 1)) - 1)
 

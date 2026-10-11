@@ -49,6 +49,26 @@ func move(handle: int, position: Vector3) -> void:
 		(_playing[handle] as Dictionary)["position"] = position
 
 
+## Written into the voice's recorded request, so a suite reads back what a real player
+## would have been set to -- the same two keys [method play] was given.
+func shape(handle: int, volume_db: float, pitch: float) -> void:
+	if _playing.has(handle):
+		var r: Dictionary = _playing[handle]
+		r["volume_db"] = volume_db
+		r["pitch"] = pitch
+
+
+func voice(handle: int) -> Dictionary:
+	if not _playing.has(handle):
+		return {}
+	var r: Dictionary = _playing[handle]
+	return {
+		"volume_db": float(r.get("volume_db", 0.0)),
+		"pitch": float(r.get("pitch", 1.0)),
+		"playing": true,
+	}
+
+
 func usage() -> Dictionary:
 	return {"playing": _playing.size(), "capacity": capacity}
 

@@ -22,7 +22,8 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `core/dot_audio_mixer.gd` | `DotAudioMixer`: sliders and the `linear_to_db` curve, a `DotConfig` |
 | `core/dot_audio_synth.gd` | `DotAudioSynth`: thirteen role voices baked to `AudioStreamWAV` |
 | `sink/` | `DotAudioSink` (`device_present()`), `DotAudioSinkGodot` (pool, stealing, `bank`), `DotAudioSinkNull` |
-| `runtime/dot_audio_manager.gd` | `DotAudioManager`: ids in, limits, `listener_position`, `roll_source`, `play_music`, `duck` |
+| `runtime/dot_audio_manager.gd` | `DotAudioManager`: ids in, limits, `listener_position`, `roll_source`, `play_music`, `duck`, `shape`/`voice` a playing handle |
+| `dot_audio_api.gd` | the API level (`DotAddonApi`); bump `LEVEL` for anything a game can newly call |
 | `examples/audio_selftest.tscn` | the suite; needs no sound card |
 
 Paths except `examples/` are in `addons/dot_audio/`.
@@ -43,6 +44,7 @@ A green run prints "ObjectDB instances were leaked at exit" and "resources still
 - Ducking is reference-counted per holder, never a boolean. [design](docs/design.md#ducking-is-reference-counted)
 - Variants and pitch come from a roll; give `roll_source` a `DotRandomStream` for reproducible sound. [design](docs/design.md#variation-belongs-in-the-document)
 - A missing sound is a debug-logged refusal, never an error. [design](docs/design.md#a-missing-sound-is-silence-not-an-error)
+- Change a playing voice with `manager.shape(h, volume_scale, pitch_scale)` (play()'s units, def gain and rolled pitch kept), never by restarting it or subclassing the Godot sink. [design](docs/design.md#a-playing-voice-is-shaped-in-plays-units)
 - Loop a copy of the stream, never the shared one. [design](docs/design.md#looping-copies-the-stream)
 - Reap where a count is consulted, not only in `_process` (which stops while paused). [design](docs/design.md#reaping-happens-at-the-point-of-refusal)
 - A real file always outranks the synth bank; which voice stands in for which id is the game's `sound_recipes()`. [design](docs/design.md#the-synthesiser-is-consulted-after-the-filesystem-never-before)

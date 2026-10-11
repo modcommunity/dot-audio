@@ -276,6 +276,31 @@ func move(handle: int, position: Vector3) -> void:
 		(player as AudioStreamPlayer2D).global_position = Vector2(position.x, position.z)
 
 
+## Sets the pooled player's own volume and pitch. A stolen or finished voice is not in
+## [code]_busy[/code] any more, so a late call cannot reach the player some other sound has
+## since been given.
+func shape(handle: int, volume_db: float, pitch: float) -> void:
+	if not _busy.has(handle):
+		return
+	var player: Node = (_busy[handle] as Dictionary)["player"]
+	player.set(&"volume_db", volume_db)
+	# The same range the manager clamps a request to: past about four times, resampling is
+	# an artefact rather than a pitch, and zero or below is an engine error.
+	player.set(&"pitch_scale", clampf(pitch, 0.05, 4.0))
+
+
+## Read from the player rather than remembered, so it reports what the engine is doing.
+func voice(handle: int) -> Dictionary:
+	if not _busy.has(handle):
+		return {}
+	var player: Node = (_busy[handle] as Dictionary)["player"]
+	return {
+		"volume_db": float(player.get(&"volume_db")),
+		"pitch": float(player.get(&"pitch_scale")),
+		"playing": bool(player.call(&"is_playing")),
+	}
+
+
 func usage() -> Dictionary:
 	return {"playing": _busy.size(), "capacity": capacity}
 

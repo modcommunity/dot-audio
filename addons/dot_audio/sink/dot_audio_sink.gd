@@ -52,6 +52,28 @@ func move(_handle: int, _position: Vector3) -> void:
 	pass
 
 
+## Sets a playing voice's loudness and pitch, in the request's own units: decibels, and a
+## pitch scale. A handle that is not playing is ignored, as [method move] ignores one.
+##
+## [b]Separate from [method play] for the reason [method move] is.[/b] An engine is one loop
+## whose pitch follows the speed and whose load follows the throttle, every frame; stopping
+## and restarting it to change either is a click a frame and a new handle a frame. Added at
+## API level 2 (2026-10-11) after a game had to subclass the Godot sink and read its pool to
+## do this. A no-op here, so a sink written before it existed still loads and simply cannot
+## shape: the voice keeps the level it started at, which is what it did before.
+func shape(_handle: int, _volume_db: float, _pitch: float) -> void:
+	pass
+
+
+## What a playing voice is set to: [code]{volume_db, pitch, playing}[/code], or empty when
+## the handle is not playing or this sink cannot say.
+##
+## The read-back of [method shape], for a probe or a suite: under xvfb it is the engine's
+## own player that answers, which is the only place "is it loud enough to hear" is true.
+func voice(_handle: int) -> Dictionary:
+	return {}
+
+
 ## How many voices are in use, and how many there are.
 func usage() -> Dictionary:
 	return {"playing": 0, "capacity": 0}

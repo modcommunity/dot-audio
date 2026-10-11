@@ -12,8 +12,8 @@ extends Node
 ## godot --headless --path . res://examples/audio_selftest.tscn
 ## [/codeblock]
 
-const SECTIONS := 8
-const CHECKS := 91
+const SECTIONS := 9
+const CHECKS := 106
 
 var _passed := 0
 var _failed := 0
@@ -40,6 +40,7 @@ func _run() -> void:
 	_test_stealing()
 	_test_music_and_ducking()
 	_test_synth()
+	_test_shaping()
 
 	_line("")
 	_line("%d sections, %d passed, %d failed" % [_section_count, _passed, _failed])
@@ -646,6 +647,124 @@ func _test_synth() -> void:
 	sink.stop(gen_handle)
 	_check(not sink.is_playing(gen_handle), "until it is stopped")
 
+	host.queue_free()
+
+
+# --- 9 ----------------------------------------------------------------------
+
+func _test_shaping() -> void:
+	_section("A playing voice is shaped, not restarted")
+
+	# An engine: one loop whose pitch follows the speed and whose load follows the throttle,
+	# every frame. Until API level 2 the manager could move and stop a voice but not this,
+	# and a game subclassed the Godot sink and read its pool to do it.
+	var cat := _catalogue()
+	var engine := DotAudioDef.new()
+	engine.id = &"engine"
+	engine.path = "res://fixtures/silent.wav"
+	engine.looping = true
+	engine.gain_db = -6.0
+	engine.pitch_min = 0.5
+	engine.pitch_max = 0.5
+	cat.add(engine)
+
+	var m := _manager(cat)
+	var sink := m.sink as DotAudioSinkNull
+
+	var h := m.play(&"rifle", 0.5, 1.5)
+	var v := m.voice(h)
+	_check(
+		is_equal_approx(float(v.get("volume_db", 99.0)), linear_to_db(0.5))
+		and is_equal_approx(float(v.get("pitch", 0.0)), 1.5),
+		"a voice reads back at the level and pitch it started at"
+	)
+	_check(m.shape(h, 1.0, 2.0), "shaping a playing voice says there was one")
+	v = m.voice(h)
+	_check(
+		is_equal_approx(float(v.get("volume_db", 99.0)), 0.0)
+		and is_equal_approx(float(v.get("pitch", 0.0)), 2.0),
+		"and the voice is at the new level and pitch"
+	)
+	_check(
+		m.is_playing(h) and sink.count_of(&"rifle") == 1,
+		"under the same handle, with nothing restarted"
+	)
+
+	# The scales mean what they mean to play(), so the def's gain and its rolled pitch are
+	# kept: a caller handing raw decibels would lose the catalogue's -6 every frame.
+	var e := m.play(&"engine")
+	_check(m.shape(e, 1.0, 2.0), "a def with its own gain and pitch shapes")
+	v = m.voice(e)
+	_check(
+		is_equal_approx(float(v.get("volume_db", 99.0)), -6.0)
+		and is_equal_approx(float(v.get("pitch", 0.0)), 1.0),
+		"keeping the def's gain and multiplying the pitch it rolled"
+	)
+	var e2 := m.play(&"engine", 0.25, 1.7)
+	var started := m.voice(e2)
+	m.shape(e2, 0.25, 1.7)
+	_check(
+		e2 != 0 and not started.is_empty() and m.voice(e2) == started,
+		"so play(id, v, p) then shape(h, v, p) changes nothing"
+	)
+	m.shape(e, 0.0, 100.0)
+	v = m.voice(e)
+	_check(
+		float(v.get("volume_db", 0.0)) <= -80.0 and is_equal_approx(float(v.get("pitch", 0.0)), 4.0),
+		"a zero scale is silence and a wild pitch is clamped, as play() clamps them"
+	)
+
+	m.stop(h)
+	_check(not m.shape(h, 1.0, 1.0) and m.voice(h).is_empty(), "a stopped voice is not shaped")
+	_check(not m.shape(987654, 1.0, 1.0), "and nor is a handle this manager never issued")
+
+	# Finished on its own with no frame in between: shape() reaps it, so the caller learns
+	# its loop is gone and the per-id count comes down even while the tree is paused.
+	sink.finish(e)
+	_check(
+		not m.shape(e, 1.0, 1.0) and not m.is_playing(e),
+		"a voice that ended on its own answers false and is released"
+	)
+	m.queue_free()
+
+	_check(DotAudioSink.new().voice(1).is_empty(), "a sink that cannot shape reads back nothing")
+
+	# --- The Godot sink: the engine's own player ---------------------------------------
+	var host := Node.new()
+	add_child(host)
+	var gs := DotAudioSinkGodot.new(host, 1)
+	gs.bank = {&"tone": DotAudioSynth.voice(DotAudioSynth.Voice.STEP)}
+	var player_of := func(handle: int) -> Node:
+		for child in host.get_children():
+			if int(child.get_meta(&"dot_audio_handle", 0)) == handle:
+				return child
+		return null
+
+	var low := gs.play({"id": "tone", "path": "", "kind": DotAudioDef.Kind.FLAT, "priority": 10, "volume_db": -3.0, "pitch": 1.0})
+	gs.shape(low, -12.0, 0.75)
+	var p: Node = player_of.call(low)
+	_check(
+		p != null and is_equal_approx(float(p.get("volume_db")), -12.0)
+		and is_equal_approx(float(p.get("pitch_scale")), 0.75),
+		"the Godot sink sets the pooled player itself"
+	)
+	v = gs.voice(low)
+	_check(
+		is_equal_approx(float(v.get("volume_db", 0.0)), -12.0)
+		and is_equal_approx(float(v.get("pitch", 0.0)), 0.75),
+		"and reads it back from the player"
+	)
+
+	# One voice, so the louder sound steals the same player. A late shape of the stolen
+	# handle must not reach the player the new sound now owns.
+	var high := gs.play({"id": "tone", "path": "", "kind": DotAudioDef.Kind.FLAT, "priority": 90, "volume_db": -1.0, "pitch": 1.25})
+	gs.shape(low, -40.0, 0.5)
+	var q: Node = player_of.call(high)
+	_check(
+		high != 0 and q == p and is_equal_approx(float(q.get("volume_db")), -1.0)
+		and is_equal_approx(float(q.get("pitch_scale")), 1.25) and gs.voice(low).is_empty(),
+		"a stolen voice's handle no longer reaches the player another sound was given"
+	)
 	host.queue_free()
 
 

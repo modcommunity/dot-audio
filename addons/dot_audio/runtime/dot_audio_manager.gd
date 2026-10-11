@@ -57,7 +57,7 @@ var listener_position: Vector3 = Vector3.ZERO
 
 ## Where the random choices come from. Anything with [code]unit_at(index)[/code].
 ##
-## dot-randomness' stream, when a game has one — and then a shot's pitch and variant are
+## A dot-core [DotRandomStream], when a game passes one — and then a shot's pitch and variant are
 ## the same on the server and on every client watching, which is what makes an audio bug
 ## reproducible. Without one it falls back to the engine's generator and says so.
 var roll_source: Object = null

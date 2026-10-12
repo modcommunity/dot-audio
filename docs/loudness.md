@@ -29,11 +29,14 @@ addons/dot_audio/tools/loudness.sh --seconds=40 --warmup=6 --fire [--scene=res:/
 
 It plays the game under `xvfb-run` with `dot_audio_capture.gd` as the main loop: the main scene (or `--scene`), a stand-in player that walks, sprints, jumps and turns through `Input.parse_input_event` (so every game's own bindings see it), and an `AudioEffectRecord` on Master. It prints one line: integrated loudness, true peak, loudness range, the minimum, median and maximum RMS of 3 s windows, how many windows were digital silence, and a verdict.
 
-Three things about it are decisions:
+Before that line it prints how far the camera went while recording (`capture camera:`). In every game here the camera rides the local player, so a camera that stayed put is a recording of somebody standing still, whatever the stand-in pressed: the bots' steps, their guns and the bed, and a trim set from it is set against the wrong mix. That is how the levels of three games were wrong on 2026-10-12.
+
+Four things about it are decisions:
 
 - **xvfb, never headless and never Movie Maker.** Both run the Dummy audio driver, where `DotAudioSink.device_present()` is false and dot-audio plays nothing. A recording of either is silence that proves nothing.
 - **The recorder is moved to the end of Master when recording starts.** A game's setup adds the limiter after the script adds anything, and a meter in front of the limiter measures a mix nobody hears.
 - **Wall-clock time, not `--fixed-fps`.** Audio is mixed in real time; a game stepped at a fixed rate on a slow software renderer plays its events sparser than they happen.
+- **The local player is driven through its own inputs, by a pilot where blind keys are not enough.** The stand-in holds W, sprints, jumps and turns, and turns wide when the camera has not moved for 0.6 s (it walked into a wall). A game it still cannot play brings `tools/loudness_pilot.gd`, which `loudness.sh` passes as `--pilot`: `drive(capture, ms)` every frame, playing through the capture's `key`, `turn`, `click` and `point` (input events and a warped pointer, so the game's sampler and bindings read them as they read a player), and `describe()`, printed as `capture pilot:`, says what the player did. game-arena (walks off walls, fires bursts), game-playground (spawns and punts props) and game-hungario (a pointer-steered monster that eats and flees) have one. Nothing in a pilot moves a body directly.
 
 A game whose main scene is a menu or a lobby that waits for a click records the menu: pass `--scene` or the game's own arguments.
 

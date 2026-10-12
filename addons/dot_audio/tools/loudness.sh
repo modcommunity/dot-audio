@@ -5,25 +5,33 @@
 # mix that clips.
 #
 #   addons/dot_audio/tools/loudness.sh [--seconds=40] [--scene=res://x.tscn] [--no-walk]
-#                                      [--fire] [--keep=out.wav] [--label=name] [-- game args]
+#                                      [--fire] [--pilot=res://x.gd] [--keep=out.wav]
+#                                      [--label=name] [-- game args]
+#
+# A game's own tools/loudness_pilot.gd is used when there is one and no --pilot is given
+# (--pilot= with nothing turns it off): it drives the local player through the game's inputs
+# where the blind stand-in cannot (dot_audio_capture.gd says why).
 #
 # Run from the game's root. One line out:
 #   loudness <label>: I -17.2 LUFS  TP -1.3 dBTP  LRA 6.1 LU  rms3 min/med/max -41/-24/-15 dBFS
 #            silent 0/13  verdict ok
 set -euo pipefail
 GODOT="${GODOT:-godot}"
-seconds=40; keep=""; label="$(basename "$PWD")"; pass=(); game=()
+seconds=40; keep=""; label="$(basename "$PWD")"; pass=(); game=(); pilot=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --seconds=*) seconds="${1#*=}"; pass+=("$1") ;;
         --keep=*) keep="${1#*=}" ;;
         --label=*) label="${1#*=}" ;;
+        --pilot=*) pilot="${1#*=}"; [ -n "$pilot" ] || pilot="none" ;;
         --) shift; game=("$@"); break ;;
         *) pass+=("$1") ;;
     esac
     shift
 done
 [ -f project.godot ] || { echo "loudness: run from a Godot project's root" >&2; exit 2; }
+[ -z "$pilot" ] && [ -f tools/loudness_pilot.gd ] && pilot="res://tools/loudness_pilot.gd"
+[ -n "$pilot" ] && [ "$pilot" != "none" ] && pass+=("--pilot=$pilot")
 out="$(mktemp --suffix=.wav)"
 log="$(mktemp)"
 trap 'rm -f "$out" "$log"' EXIT
@@ -35,7 +43,7 @@ if [ ! -s "$out" ]; then
     echo "loudness $label: no recording"; grep -E "^capture|SCRIPT ERROR|ERROR" "$log" | head -5; exit 1
 fi
 [ -n "$keep" ] && cp "$out" "$keep"
-grep -E "^capture buses" "$log" | cut -c1-300 || true
+grep -E "^capture (buses|pilot|camera)" "$log" | cut -c1-300 || true
 python3 - "$out" "$label" <<'PY'
 import re, subprocess, sys, statistics
 wav, label = sys.argv[1], sys.argv[2]

@@ -28,7 +28,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `runtime/dot_audio_footsteps.gd` | `DotAudioFootsteps`: steps by distance and surface for any number of bodies; `stepped` |
 | `runtime/dot_audio_ambience.gd` | `DotAudioAmbience`: a bed per map, zones by box, equal-power crossfades |
 | `stock/` | CC0 footsteps (Kenney) and generated beds; `CREDITS.md` |
-| `tools/loudness.sh`, `tools/dot_audio_capture.gd` | record a game under xvfb and measure it; run from a game's root |
+| `tools/loudness.sh`, `tools/dot_audio_capture.gd` | record a game under xvfb and measure it; run from a game's root; a game's `tools/loudness_pilot.gd` drives its player |
 | `runtime/dot_audio_manager.gd` | `DotAudioManager`: ids in, limits, `listener_position`, `roll_source`, `play_music`, `duck`, `shape`/`voice` a playing handle |
 | `dot_audio_api.gd` | the API level (`DotAddonApi`); bump `LEVEL` for anything a game can newly call |
 | `examples/audio_selftest.tscn` | the suite; needs no sound card |
@@ -58,6 +58,7 @@ A green run prints "ObjectDB instances were leaked at exit" and "resources still
 - `SceneTree.process_frame` fires before `Node._process`; a test must not await a frame to see `_process` run. [history](docs/history.md#a-pause-menu-silenced-the-game)
 
 - Measure a level with `addons/dot_audio/tools/loudness.sh` under xvfb, never headless or Movie Maker (Dummy driver, null sink, silence). [loudness](docs/loudness.md#measuring-addonsdot_audiotoolsloudnesssh)
+- Trust a level only from a run whose `capture camera:` line shows the local player moving; a game the stand-in cannot play brings `tools/loudness_pilot.gd` (`drive(capture, ms)` through the capture's `key`/`turn`/`click`/`point`, never moving a body). [loudness](docs/loudness.md#measuring-addonsdot_audiotoolsloudnesssh)
 - Set a game's level in its catalogue; `limit_master` is a backstop (not on the web: sample playback runs no bus effects) and `loudness_trim_db` a measured nudge added to every voice's gain. [loudness](docs/loudness.md#how-it-is-held)
 - A footstep is distance on the ground, silent under `quiet_speed`; a surface comes from the collider (`surface` meta, `surface_<name>` group, node name) else the map's `default_surface`. [loudness](docs/loudness.md#footsteps-dotaudiofootsteps)
 - Every map sets a bed (`set_map_bed`); nothing may be digital silence. Beds are −24 LUFS; regenerate with `tools/make_ambience.py`, never edit an `.ogg` by hand. [loudness](docs/loudness.md#the-stock-set)

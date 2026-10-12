@@ -1,6 +1,6 @@
 # dot-audio
 
-Audio as a catalogue of ids: a pool with priorities, concurrency caps, cooldowns, a distance cull, music crossfades and ducking, and a synthesiser for games with no audio files yet. The whole path runs on a machine with no speakers.
+Audio as a catalogue of ids: a pool with priorities, concurrency caps, cooldowns, a distance cull, music crossfades and ducking, and a synthesiser for games with no audio files yet; plus the family's footsteps by surface, ambience beds per map and zone, the loudness standard (−17 LUFS, −1 dBTP) with its master limiter, and the tool that measures a game against it. The whole path runs on a machine with no speakers.
 
 Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is specific to audio.
 
@@ -11,6 +11,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | Read | Before |
 | --- | --- |
 | [docs/design.md](docs/design.md) | anything: the sink seam, the pieces, paths not streams, culling, stealing, ducking, variation, silence on failure, looping, reaping, the synthesiser, what is not here |
+| [docs/loudness.md](docs/loudness.md) | footsteps, ambience, a level, the limiter, or measuring a game: the standard and why, the capture tool, the stock set |
 | [docs/history.md](docs/history.md) | touching reaping, looping or the suite's frame waits: the pause-menu silence, the unread `looping` |
 
 ## Layout
@@ -22,11 +23,17 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `core/dot_audio_mixer.gd` | `DotAudioMixer`: sliders and the `linear_to_db` curve, a `DotConfig` |
 | `core/dot_audio_synth.gd` | `DotAudioSynth`: thirteen role voices baked to `AudioStreamWAV` |
 | `sink/` | `DotAudioSink` (`device_present()`), `DotAudioSinkGodot` (pool, stealing, `bank`), `DotAudioSinkNull` |
+| `core/dot_audio_stock.gd` | `DotAudioStock`: the stock footsteps and beds as defs, `add_to`, surface names and aliases |
+| `core/dot_audio_loudness.gd` | `DotAudioLoudness`: the standard's numbers, `install_limiter` |
+| `runtime/dot_audio_footsteps.gd` | `DotAudioFootsteps`: steps by distance and surface for any number of bodies; `stepped` |
+| `runtime/dot_audio_ambience.gd` | `DotAudioAmbience`: a bed per map, zones by box, equal-power crossfades |
+| `stock/` | CC0 footsteps (Kenney) and generated beds; `CREDITS.md` |
+| `tools/loudness.sh`, `tools/dot_audio_capture.gd` | record a game under xvfb and measure it; run from a game's root |
 | `runtime/dot_audio_manager.gd` | `DotAudioManager`: ids in, limits, `listener_position`, `roll_source`, `play_music`, `duck`, `shape`/`voice` a playing handle |
 | `dot_audio_api.gd` | the API level (`DotAddonApi`); bump `LEVEL` for anything a game can newly call |
 | `examples/audio_selftest.tscn` | the suite; needs no sound card |
 
-Paths except `examples/` are in `addons/dot_audio/`.
+Paths except `examples/` and the repository's `tools/make_ambience.py` (regenerates the beds) are in `addons/dot_audio/`.
 
 ## Running and testing
 
@@ -50,4 +57,9 @@ A green run prints "ObjectDB instances were leaked at exit" and "resources still
 - A real file always outranks the synth bank; which voice stands in for which id is the game's `sound_recipes()`. [design](docs/design.md#the-synthesiser-is-consulted-after-the-filesystem-never-before)
 - `SceneTree.process_frame` fires before `Node._process`; a test must not await a frame to see `_process` run. [history](docs/history.md#a-pause-menu-silenced-the-game)
 
-Deliberately not here: any audio files, DSP, per-voice fades (`_ramp` is the subclass point), a stem player, voice chat. [design](docs/design.md#deliberately-not-here)
+- Measure a level with `addons/dot_audio/tools/loudness.sh` under xvfb, never headless or Movie Maker (Dummy driver, null sink, silence). [loudness](docs/loudness.md#measuring-addonsdot_audiotoolsloudnesssh)
+- Set a game's level in its catalogue; `limit_master` is a backstop and `loudness_trim_db` a measured nudge. Neither runs on the web (sample playback has no bus effects). [loudness](docs/loudness.md#how-it-is-held)
+- A footstep is distance on the ground, silent under `quiet_speed`; a surface comes from the collider (`surface` meta, `surface_<name>` group, node name) else the map's `default_surface`. [loudness](docs/loudness.md#footsteps-dotaudiofootsteps)
+- Every map sets a bed (`set_map_bed`); nothing may be digital silence. Beds are −24 LUFS; regenerate with `tools/make_ambience.py`, never edit an `.ogg` by hand. [loudness](docs/loudness.md#the-stock-set)
+
+Deliberately not here: game audio beyond the stock set, DSP, per-voice fades (`_ramp` is the subclass point), a stem player, voice chat. [design](docs/design.md#deliberately-not-here)

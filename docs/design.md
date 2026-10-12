@@ -76,7 +76,7 @@ It does not break "ships no audio": that rule is about what a `DotAudioDef` may 
 
 ## Deliberately not here
 
-- **Any audio.** dot-ui's rule. `DotAudioSynth` is arithmetic and a stand-in, not an asset library: thirteen voices and no way to author a fourteenth from data, on purpose.
+- **Game audio.** A game's own sounds are the game's. The exceptions are the stock footsteps and ambience beds in `stock/`, which are the same files in every game ([loudness.md](loudness.md#the-stock-set)); `DotAudioSynth` is arithmetic and a stand-in, not an asset library: thirteen voices and no way to author a fourteenth from data, on purpose.
 - **DSP and effect design.** Reverb zones, filters and sends are the engine's buses.
 - **Per-voice fades.** The shipped fade goes through the bus, which is what almost every game wants and costs nothing per voice. A game that eases a voice itself calls `shape()` each frame; `_ramp` is the subclass point for sample-accurate stem control.
 - **A music stem player.** Layered stems in phase need one stream and a mix, which is a different class. `play_music` crossfades whole tracks.

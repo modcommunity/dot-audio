@@ -46,6 +46,15 @@ signal music_changed(from_id: StringName, to_id: StringName)
 
 @export var register_as_service: bool = true
 
+## Puts the family's limiter at the end of the Master bus (DotAudioLoudness): a ceiling at
+## -1.5 dBFS so ten sounds at once cannot clip. On by default because every game wants it
+## and a game that forgot it is the one that clipped in the first play test.
+@export var limit_master: bool = true
+
+## A whole-game nudge toward the loudness target, applied as the limiter's pre-gain. Set
+## from a measurement (`addons/dot_audio/tools/loudness.sh`), never by ear.
+@export_range(-24.0, 12.0, 0.1) var loudness_trim_db: float = 0.0
+
 ## The listener's position, for culling. A game sets this once a frame.
 ##
 ## [b]Culling happens here rather than in the sink[/b] because it is the cheapest place:
@@ -104,6 +113,9 @@ func setup() -> DotResult:
 		var missing := mixer.apply_to_buses()
 		if not missing.is_empty():
 			DotLog.info(CHANNEL, "buses not present", {"names": ", ".join(missing)})
+
+	if limit_master and DotAudioSink.device_present():
+		DotAudioLoudness.install_limiter(loudness_trim_db)
 
 	if register_as_service:
 		DotRegistry.register(SERVICE, self)

@@ -9,7 +9,7 @@ This asset, along with all the others, was built initially with **Claude Code** 
 
 **Please treat this as partially tested.** Every asset has its own headless test suite and those suites pass, but very little of this has been in front of real players yet. Expect rough edges, and please report anything you run into.
 
-## It ships no audio
+## It ships no game audio
 
 A sound is an id and a **path**, never a loaded `AudioStream`. Two reasons, and the second is the harder one:
 
@@ -18,7 +18,7 @@ A sound is an id and a **path**, never a loaded `AudioStream`. Two reasons, and 
 
 So `DotAudioCatalogue.validate()` checks everything except whether the file exists, and `missing_files()` is a separate question, asked by the client that is about to need them.
 
-It still ships no audio, and a game with no files can still make a noise. `DotAudioSynth` bakes short sounds out of a sine sweep, a deterministic hash and an attack-decay envelope, and `DotAudioSinkGodot.bank` holds them — **behind** the filesystem, so the moment a real file exists at the path a def already names, that file wins and nobody edits a line:
+It ships no game audio, and a game with no files can still make a noise. `DotAudioSynth` bakes short sounds out of a sine sweep, a deterministic hash and an attack-decay envelope, and `DotAudioSinkGodot.bank` holds them — **behind** the filesystem, so the moment a real file exists at the path a def already names, that file wins and nobody edits a line:
 
 ```gdscript
 var bank := DotAudioSynth.bank(catalogue, {
@@ -51,6 +51,16 @@ Mapping a 0..1 slider straight onto `volume_db`, even scaled to -60..0, gives a 
 | `max_distance` | A cull, not a curve. A sound at 400 metres attenuated to inaudible still costs a stream load, a voice and a position update every frame. |
 
 And the pool: `DotAudioSinkGodot` creates `voices` players once and never frees them. The obvious spelling, which is to create, play and `queue_free` on finished, has no ceiling, and a firefight is a hundred nodes created and destroyed per second, which on the web is a visible hitch every time anything happens. When the pool is full the **lowest-priority** voice is stolen, and if nothing is lower the new sound is refused: a gunshot losing to a footstep because the footstep started first is the failure mode of every fixed pool with no priority.
+
+## Footsteps, ambience and one loudness for every game
+
+Three things every game needs and none should write again:
+
+- **`DotAudioFootsteps`**: footsteps for the player, other players and bots, one per stride of distance travelled (so a body moved by the network steps at the rate it moves), silent when creeping, by the surface underfoot (a collider's `surface` meta, a `surface_wood` group, or a name like `Floor_Wood`).
+- **`DotAudioAmbience`**: a bed per map and zones that swap it (a house, a tunnel), crossfaded, so no game is ever digital silence between events.
+- **A loudness standard**: −17 LUFS integrated and −1 dBTP, a master limiter on by default, and `addons/dot_audio/tools/loudness.sh`, which plays a game under xvfb with a stand-in walking and prints its level.
+
+The stock files are in `addons/dot_audio/stock/`, all CC0: footsteps from [Kenney](https://www.kenney.nl)'s Impact Sounds, and nine ambience beds synthesised by `tools/make_ambience.py` (credits in `stock/CREDITS.md`). `DotAudioStock.add_to(catalogue)` adds them as ordinary defs, and a game's own def with the same id wins. The reasoning is in [docs/loudness.md](docs/loudness.md).
 
 ## Using it
 

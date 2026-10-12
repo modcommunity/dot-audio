@@ -12,8 +12,8 @@ extends Node
 ## godot --headless --path . res://examples/audio_selftest.tscn
 ## [/codeblock]
 
-const SECTIONS := 9
-const CHECKS := 106
+const SECTIONS := 12
+const CHECKS := 139
 
 var _passed := 0
 var _failed := 0
@@ -41,6 +41,9 @@ func _run() -> void:
 	_test_music_and_ducking()
 	_test_synth()
 	_test_shaping()
+	_test_stock()
+	_test_footsteps()
+	_test_ambience_and_loudness()
 
 	_line("")
 	_line("%d sections, %d passed, %d failed" % [_section_count, _passed, _failed])
@@ -787,3 +790,196 @@ func _check(condition: bool, what: String) -> void:
 
 func _line(text: String) -> void:
 	print(text)
+
+
+# --- 10 ---------------------------------------------------------------------
+
+func _test_stock() -> void:
+	_section("Stock footsteps and beds: real files, every one")
+
+	var cat := DotAudioCatalogue.new()
+	var mine := DotAudioDef.new()
+	mine.id = &"footstep_wood"
+	mine.path = "res://fixtures/silent.wav"
+	cat.add(mine)
+	var added := DotAudioStock.add_to(cat)
+	_check(
+		added == DotAudioStock.SURFACES.size() - 1 + DotAudioStock.BEDS.size(),
+		"add_to adds every stock id the game has not defined (%d)" % added
+	)
+	_check(cat.find(&"footstep_wood").path == "res://fixtures/silent.wav", "and a game's own id wins")
+	_check(cat.validate().ok, "the stock defs validate")
+
+	# The armed half: a def naming a file nobody shipped passes validate() and is silent for
+	# ever. Every path and every variant must exist on disk.
+	var missing := PackedStringArray()
+	for d in DotAudioStock.footstep_defs() + DotAudioStock.ambience_defs():
+		for p in d.variants if not d.variants.is_empty() else PackedStringArray([d.path]):
+			if not ResourceLoader.exists(p):
+				missing.append(p)
+	_check(missing.is_empty(), "every stock file is there (%s)" % ", ".join(missing))
+
+	var bed := load(DotAudioStock.ambience_defs()[0].path) as AudioStream
+	_check(bed != null and bed.get_length() > 20.0, "a bed loads and is a long loop, not a one-shot")
+	_check(
+		DotAudioStock.ambience_defs().all(func(d: DotAudioDef) -> bool: return d.looping and d.bus == &"Ambience"),
+		"every bed loops on the Ambience bus"
+	)
+
+	_check(DotAudioStock.surface_of("Floor_Wood_02") == &"wood", "a node name with a surface word names it")
+	_check(DotAudioStock.surface_of("asphalt") == &"concrete", "an alias folds onto a surface with files")
+	_check(DotAudioStock.surface_of("snowbank") == &"snow", "a longer word containing one too")
+	_check(DotAudioStock.surface_of("lava") == &"", "and an unknown one says nothing")
+	_check(DotAudioStock.footstep_id(&"lava") == &"footstep_concrete", "so a step on it is concrete")
+
+
+# --- 11 ---------------------------------------------------------------------
+
+func _test_footsteps() -> void:
+	_section("A step is distance travelled, and slow is silent")
+
+	var cat := DotAudioCatalogue.new()
+	DotAudioStock.add_to(cat)
+	var m := _manager(cat, 32)
+	var sink := m.sink as DotAudioSinkNull
+	var steps := DotAudioFootsteps.new()
+	steps.manager = m
+	steps.default_surface = &"grass"
+	add_child(steps)
+	steps.set_physics_process(false)
+
+	var body := Node3D.new()
+	add_child(body)
+	var on_ground := [true]
+	steps.track(body, {"grounded": func() -> bool: return on_ground[0]})
+	var heard: Array = []
+	steps.stepped.connect(func(_b: Node3D, s: StringName, l: float) -> void: heard.append([s, l]))
+
+	# Walking at 4 m/s for 3 s on a map whose ground says nothing: grass.
+	for i in 180:
+		body.global_position += Vector3(4.0 / 60.0, 0, 0)
+		steps.advance(body, 1.0 / 60.0)
+	var walked := heard.size()
+	_check(walked >= 5 and walked <= 9, "twelve metres at a walk is about six steps (%d)" % walked)
+	_check(sink.count_of(&"footstep_grass") == walked, "each one a grass step, on the map's ground")
+
+	heard.clear()
+	for i in 180:
+		body.global_position += Vector3(1.0 / 60.0, 0, 0)
+		steps.advance(body, 1.0 / 60.0)
+	_check(heard.is_empty(), "creeping at 1 m/s makes no sound at all")
+
+	heard.clear()
+	for i in 60:
+		body.global_position += Vector3(8.0 / 60.0, 0, 0)
+		steps.advance(body, 1.0 / 60.0)
+	_check(
+		not heard.is_empty() and is_equal_approx(float(heard[0][1]), 1.0),
+		"a run is full loudness"
+	)
+
+	heard.clear()
+	on_ground[0] = false
+	for i in 30:
+		body.global_position += Vector3(4.0 / 60.0, 0, 0)
+		steps.advance(body, 1.0 / 60.0)
+	_check(heard.is_empty(), "nothing in the air")
+	on_ground[0] = true
+	steps.advance(body, 1.0 / 60.0)
+	_check(heard.size() == 1 and is_equal_approx(float(heard[0][1]), 1.0), "and a landing is one full step")
+
+	heard.clear()
+	body.global_position += Vector3(50, 0, 0)
+	steps.advance(body, 1.0 / 60.0)
+	_check(heard.is_empty(), "a teleport is not a walk")
+
+	var floor := StaticBody3D.new()
+	floor.name = "Ground"
+	floor.set_meta(&"surface", "plank")
+	var tile := Node3D.new()
+	tile.name = "KitchenTiles"
+	tile.add_to_group(&"surface_tile")
+	var child := StaticBody3D.new()
+	child.name = "Slab"
+	tile.add_child(child)
+	add_child(floor)
+	add_child(tile)
+	_check(DotAudioFootsteps.surface_of_collider(floor) == &"wood", "a collider's surface meta names it")
+	_check(DotAudioFootsteps.surface_of_collider(child) == &"concrete", "a parent's surface group does too")
+	steps.track(floor, {"surface": &"metal"})
+	_check(steps.tracked_count() == 2, "any number of bodies, each with its own options")
+	steps.untrack(floor)
+
+	floor.queue_free()
+	tile.queue_free()
+	body.queue_free()
+	steps.queue_free()
+	m.queue_free()
+
+
+# --- 12 ---------------------------------------------------------------------
+
+func _test_ambience_and_loudness() -> void:
+	_section("A world is never silent, and never clips")
+
+	var cat := DotAudioCatalogue.new()
+	DotAudioStock.add_to(cat)
+	var m := _manager(cat, 16)
+	var sink := m.sink as DotAudioSinkNull
+	var amb := DotAudioAmbience.new()
+	amb.manager = m
+	amb.fade_seconds = 1.0
+	add_child(amb)
+	amb.set_process(false)
+
+	amb.set_map_bed(&"")
+	_check(amb.current_bed() == &"amb_outdoor", "a map that names no bed still gets one")
+	amb.set_map_bed(&"amb_night")
+	_check(amb.current_bed() == &"amb_night" and sink.count_of(&"amb_night") == 1, "a map's own bed plays")
+	amb.add_zone(AABB(Vector3(0, 0, 0), Vector3(10, 5, 10)), &"amb_indoor")
+	m.listener_position = Vector3(5, 1, 5)
+	amb._choose()
+	_check(amb.current_bed() == &"amb_indoor", "walking into a zone swaps the bed")
+	for i in 90:
+		amb._ease(1.0 / 60.0)
+	_check(
+		sink.count_of(&"amb_night") == 1 and m.describe()["playing"] == 1,
+		"the old bed fades out and stops, the new one stays (%s playing)" % str(m.describe()["playing"])
+	)
+	m.listener_position = Vector3(50, 1, 50)
+	amb._choose()
+	_check(amb.current_bed() == &"amb_night", "and walking out brings the map's back")
+	amb._choose()
+	_check(sink.count_of(&"amb_night") == 2, "once: choosing again with nothing changed starts nothing")
+	m.stop_all()
+	amb._choose()
+	_check(sink.count_of(&"amb_night") == 3, "a bed that was stopped under it is started again")
+	amb.stop(0.0)
+	_check(amb.current_bed() == &"", "stop() is quiet until the next map")
+
+	var before := AudioServer.get_bus_effect_count(0)
+	var lim := DotAudioLoudness.install_limiter(-2.0)
+	var again := DotAudioLoudness.install_limiter(1.5)
+	_check(
+		lim != null and lim == again and AudioServer.get_bus_effect_count(0) == before + 1,
+		"one limiter on Master however often a manager is set up"
+	)
+	_check(
+		is_equal_approx(again.ceiling_db, DotAudioLoudness.LIMITER_CEILING_DB)
+		and is_equal_approx(again.pre_gain_db, 1.5),
+		"at the family ceiling, with the game's trim as its pre-gain"
+	)
+	_check(
+		DotAudioLoudness.LIMITER_CEILING_DB < DotAudioLoudness.TRUE_PEAK_CEILING,
+		"the sample ceiling sits under the true-peak ceiling"
+	)
+	_check(
+		DotAudioLoudness.band_of(-17.0) == 0 and DotAudioLoudness.band_of(-25.0) == -1
+		and DotAudioLoudness.band_of(-12.0) == 1,
+		"and a measurement reads against the band"
+	)
+	AudioServer.remove_bus_effect(0, AudioServer.get_bus_effect_count(0) - 1)
+
+	amb.queue_free()
+	m.queue_free()
+

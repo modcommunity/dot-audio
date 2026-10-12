@@ -126,6 +126,15 @@ static func ambience_defs() -> Array[DotAudioDef]:
 	return out
 
 
+## Every stock id, footsteps then beds: for a game whose suite asserts its id list is whole.
+static func ids() -> Array[StringName]:
+	var out: Array[StringName] = []
+	for s in SURFACES:
+		out.append(StringName(FOOTSTEP_PREFIX + String(s)))
+	out.append_array(BEDS)
+	return out
+
+
 ## Adds every stock def whose id the catalogue does not already have. Returns how many.
 static func add_to(catalogue: DotAudioCatalogue) -> int:
 	var added := 0

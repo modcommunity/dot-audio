@@ -20,7 +20,7 @@ extends Node
 ## in a hiding game, and a footstep system with no quiet speed makes it impossible.
 ##
 ## [b]The surface comes from what is underfoot.[/b] A ray down from the body finds the
-## collider; its `surface` meta (or a parent's, three levels up), a `surface_<name>` group,
+## collider; its `surface` or `dot_fps_surface` meta (or a parent's, three levels up), a `surface_<name>` group,
 ## or its node name ("Floor_Wood") names it, folded through [method DotAudioStock.surface_of];
 ## anything else is [member default_surface], which a game sets per map.
 ##
@@ -49,6 +49,11 @@ var default_surface: StringName = &"concrete"
 @export_range(0.05, 5.0, 0.05) var ground_probe: float = 0.6
 ## Seconds in the air before touching down makes a landing.
 @export_range(0.0, 2.0, 0.01) var landing_air_time: float = 0.3
+## Meta keys a collider (or the hit shape) may name its surface under, first match wins.
+## `dot_fps_surface` is dot-player-controller's own, so a map that already tells the movement
+## what it is made of tells the footsteps too.
+var surface_metas: Array[StringName] = [&"surface", &"dot_fps_surface"]
+
 ## Physics layers the ground ray sees.
 @export_flags_3d_physics var ground_mask: int = 0xFFFFFFFF
 
@@ -167,7 +172,7 @@ func _step(body: Node3D, st: Dictionary, loudness: float) -> void:
 func surface_under(body: Node3D) -> StringName:
 	var hit := _ground_hit(body)
 	if not hit.is_empty():
-		var s := surface_of_collider(hit.get("collider"), int(hit.get("shape", -1)))
+		var s := surface_of_collider(hit.get("collider"), int(hit.get("shape", -1)), surface_metas)
 		if s != &"":
 			return s
 	return DotAudioStock.surface_of(String(default_surface))
@@ -179,22 +184,27 @@ func surface_under(body: Node3D) -> StringName:
 ##
 ## [param shape_index] is the hit's shape: one static body built of many boxes (a map built
 ## from a document) names each box's surface on its [CollisionShape3D], which is asked first.
-static func surface_of_collider(collider: Object, shape_index: int = -1) -> StringName:
+static func surface_of_collider(
+	collider: Object, shape_index: int = -1, metas: Array[StringName] = [&"surface", &"dot_fps_surface"]
+) -> StringName:
 	if shape_index >= 0 and collider is CollisionObject3D:
 		var body := collider as CollisionObject3D
 		var owner_id := body.shape_find_owner(shape_index)
 		var shape_node := body.shape_owner_get_owner(owner_id) as Node if owner_id >= 0 else null
-		if shape_node != null and shape_node.has_meta(&"surface"):
-			var from_shape := DotAudioStock.surface_of(str(shape_node.get_meta(&"surface")))
-			if from_shape != &"":
-				return from_shape
+		if shape_node != null:
+			for key in metas:
+				if shape_node.has_meta(key):
+					var from_shape := DotAudioStock.surface_of(str(shape_node.get_meta(key)))
+					if from_shape != &"":
+						return from_shape
 	var node := collider as Node
 	var depth := 0
 	while node != null and depth < 4:
-		if node.has_meta(&"surface"):
-			var s := DotAudioStock.surface_of(str(node.get_meta(&"surface")))
-			if s != &"":
-				return s
+		for key in metas:
+			if node.has_meta(key):
+				var s := DotAudioStock.surface_of(str(node.get_meta(key)))
+				if s != &"":
+					return s
 		for g in node.get_groups():
 			var gs := String(g)
 			if gs.begins_with("surface_"):

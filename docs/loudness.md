@@ -44,7 +44,7 @@ One node per game; `track(body)` for the player, other players and bots.
 - **A step is distance, not time or animation.** Every 1.5 m at a walk to 2.3 m at a run, measured on the ground plane, so a body moved by netcode interpolation or a navigation agent steps at the rate it really moves.
 - **Slow is silent.** Under `quiet_speed` (1.4 m/s) nothing plays; sneaking is a mechanic in a hiding game.
 - **A landing after `landing_air_time` in the air is one full step**, a teleport (over 4 m in a frame) is nothing.
-- **The surface comes from the ground collider**: its `surface` meta or a parent's, a `surface_<name>` group, or a surface word in the node name, folded through `DotAudioStock.surface_of` (so `stone`, `asphalt` and `Floor_Tile` are concrete). Anything else is `default_surface`, which a game sets per map.
+- **The surface comes from the ground collider**: the hit shape's or its `surface` meta (or dot-player-controller's `dot_fps_surface`), or a parent's, a `surface_<name>` group, or a surface word in the node name, folded through `DotAudioStock.surface_of` (so `stone`, `asphalt` and `Floor_Tile` are concrete). Anything else is `default_surface`, which a game sets per map.
 - **`stepped(body, surface, loudness)`** is what a listening bot hears, so a game needs no second footstep system for its AI.
 
 ## Ambience: `DotAudioAmbience`

@@ -28,6 +28,7 @@ const ALIASES := {
 	"parquet": &"wood", "gym": &"wood", "stage": &"wood",
 	"dirt": &"grass", "earth": &"grass", "mud": &"grass", "sand": &"grass", "gravel": &"grass",
 	"leaves": &"grass", "lawn": &"grass", "turf": &"grass", "field": &"grass",
+	"foliage": &"grass", "slime": &"grass", "moss": &"grass",
 	"ice": &"snow",
 	"rug": &"carpet", "fabric": &"carpet", "mat": &"carpet", "cloth": &"carpet", "foam": &"carpet",
 	"rubber": &"carpet", "linoleum": &"carpet", "mattress": &"carpet",

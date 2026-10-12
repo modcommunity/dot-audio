@@ -13,7 +13,7 @@ extends Node
 ## [/codeblock]
 
 const SECTIONS := 12
-const CHECKS := 143
+const CHECKS := 144
 
 var _passed := 0
 var _failed := 0
@@ -910,6 +910,11 @@ func _test_footsteps() -> void:
 	add_child(floor)
 	add_child(tile)
 	_check(DotAudioFootsteps.surface_of_collider(floor) == &"wood", "a collider's surface meta names it")
+	var fps_floor := StaticBody3D.new()
+	fps_floor.name = "Box"
+	fps_floor.set_meta(&"dot_fps_surface", &"ice")
+	_check(DotAudioFootsteps.surface_of_collider(fps_floor) == &"snow", "so does dot-player-controller's dot_fps_surface")
+	fps_floor.free()
 	_check(DotAudioFootsteps.surface_of_collider(child) == &"concrete", "a parent's surface group does too")
 	_check(
 		DotAudioFootsteps.surface_of_collider(floor, 0) == &"wood" and DotAudioStock.surface_of("sidewalk") == &"concrete",

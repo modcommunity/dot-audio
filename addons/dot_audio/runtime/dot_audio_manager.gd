@@ -51,8 +51,10 @@ signal music_changed(from_id: StringName, to_id: StringName)
 ## and a game that forgot it is the one that clipped in the first play test.
 @export var limit_master: bool = true
 
-## A whole-game nudge toward the loudness target, applied as the limiter's pre-gain. Set
-## from a measurement (`addons/dot_audio/tools/loudness.sh`), never by ear.
+## A whole-game nudge toward the loudness target, added to every voice's gain. Set from a
+## measurement (`addons/dot_audio/tools/loudness.sh`), never by ear. On the voices rather than
+## on the limiter's pre-gain because a web build in sample playback runs no bus effects, and a
+## trim there would reach every platform but the browser.
 @export_range(-24.0, 12.0, 0.1) var loudness_trim_db: float = 0.0
 
 ## The listener's position, for culling. A game sets this once a frame.
@@ -115,7 +117,7 @@ func setup() -> DotResult:
 			DotLog.info(CHANNEL, "buses not present", {"names": ", ".join(missing)})
 
 	if limit_master and DotAudioSink.device_present():
-		DotAudioLoudness.install_limiter(loudness_trim_db)
+		DotAudioLoudness.install_limiter()
 
 	if register_as_service:
 		DotRegistry.register(SERVICE, self)
@@ -210,7 +212,7 @@ func _start(
 		"id": String(id),
 		"path": def.pick_path(roll_a),
 		"bus": String(def.bus),
-		"volume_db": _volume_db(def.gain_db, volume_scale),
+		"volume_db": _volume_db(def.gain_db + loudness_trim_db, volume_scale),
 		"pitch": _pitch(rolled_pitch, pitch_scale),
 		"kind": def.kind if positioned else DotAudioDef.Kind.FLAT,
 		"position": position,
@@ -226,7 +228,7 @@ func _start(
 		return 0
 
 	_playing[handle] = id
-	_voice_base[handle] = {"gain_db": def.gain_db, "pitch": rolled_pitch}
+	_voice_base[handle] = {"gain_db": def.gain_db + loudness_trim_db, "pitch": rolled_pitch}
 	_concurrent[id] = int(_concurrent.get(id, 0)) + 1
 	_last_started_ms[id] = now
 	played.emit(id, handle, &"ok")

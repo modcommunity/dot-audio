@@ -58,7 +58,7 @@ A green run prints "ObjectDB instances were leaked at exit" and "resources still
 - `SceneTree.process_frame` fires before `Node._process`; a test must not await a frame to see `_process` run. [history](docs/history.md#a-pause-menu-silenced-the-game)
 
 - Measure a level with `addons/dot_audio/tools/loudness.sh` under xvfb, never headless or Movie Maker (Dummy driver, null sink, silence). [loudness](docs/loudness.md#measuring-addonsdot_audiotoolsloudnesssh)
-- Set a game's level in its catalogue; `limit_master` is a backstop and `loudness_trim_db` a measured nudge. Neither runs on the web (sample playback has no bus effects). [loudness](docs/loudness.md#how-it-is-held)
+- Set a game's level in its catalogue; `limit_master` is a backstop (not on the web: sample playback runs no bus effects) and `loudness_trim_db` a measured nudge added to every voice's gain. [loudness](docs/loudness.md#how-it-is-held)
 - A footstep is distance on the ground, silent under `quiet_speed`; a surface comes from the collider (`surface` meta, `surface_<name>` group, node name) else the map's `default_surface`. [loudness](docs/loudness.md#footsteps-dotaudiofootsteps)
 - Every map sets a bed (`set_map_bed`); nothing may be digital silence. Beds are −24 LUFS; regenerate with `tools/make_ambience.py`, never edit an `.ogg` by hand. [loudness](docs/loudness.md#the-stock-set)
 

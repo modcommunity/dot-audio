@@ -12,7 +12,9 @@ extends RefCounted
 ##
 ## [b]The limiter is a backstop, not the mix.[/b] It catches the pile-up of ten things at
 ## once; a game that leans on it for its level sounds squashed. Levels are set in the
-## catalogue, and [member DotAudioManager.loudness_trim_db] is the last, whole-game nudge.
+## catalogue, and [member DotAudioManager.loudness_trim_db] (per voice) is the last,
+## whole-game nudge. [param trim_db] here is a pre-gain for a caller that wants one; the
+## manager passes none.
 
 const TARGET_LUFS := -17.0
 const BAND_LOW := -18.0

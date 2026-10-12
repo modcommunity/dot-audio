@@ -13,7 +13,7 @@ extends Node
 ## [/codeblock]
 
 const SECTIONS := 12
-const CHECKS := 142
+const CHECKS := 143
 
 var _passed := 0
 var _failed := 0
@@ -991,6 +991,16 @@ func _test_ambience_and_loudness() -> void:
 		"and a measurement reads against the band"
 	)
 	AudioServer.remove_bus_effect(0, AudioServer.get_bus_effect_count(0) - 1)
+
+	var trimmed := _manager(cat, 4)
+	trimmed.loudness_trim_db = 4.0
+	var th := trimmed.play(&"footstep_wood", 0.5)
+	_check(
+		is_equal_approx(float(trimmed.voice(th).get("volume_db", 99.0)),
+			DotAudioStock.footstep_defs()[1].gain_db + 4.0 + linear_to_db(0.5)),
+		"the trim is on every voice, so a browser without bus effects hears it too"
+	)
+	trimmed.queue_free()
 
 	amb.queue_free()
 	m.queue_free()

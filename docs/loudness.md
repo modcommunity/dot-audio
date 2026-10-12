@@ -16,8 +16,8 @@ The tool's verdict says `quiet` under −20 LUFS and `loud` over −14, which is
 
 - **Levels are set in the catalogue.** `gain_db` per def is the mix. A game that is out of band is mixed again, not limited harder.
 - **The master limiter is a backstop.** `DotAudioManager.limit_master` (on by default) puts an `AudioEffectHardLimiter` at the end of Master with its ceiling at −2 dBFS: a decibel under the true-peak ceiling because the peaks between samples of a limited signal land above its sample peaks (at −1.5 a game measured −0.9 dBTP). It catches ten things at once; a mix that leans on it sounds squashed.
-- **`DotAudioManager.loudness_trim_db`** is the whole-game nudge, applied as the limiter's pre-gain, set from a measurement and never by ear.
-- **The web build gets the catalogue levels only.** A web export in sample playback mode does not run bus effects, so the limiter and the trim do nothing there. That is why levels belong in the catalogue.
+- **`DotAudioManager.loudness_trim_db`** is the whole-game nudge, added to every voice's gain (so it reaches the browser too), set from a measurement and never by ear.
+- **The web build has no limiter.** A web export in sample playback mode does not run bus effects, so the backstop does nothing there; the catalogue levels and the trim, which are per voice, still apply. That is why levels belong in the catalogue and never lean on the limiter.
 
 ## Measuring: `addons/dot_audio/tools/loudness.sh`
 

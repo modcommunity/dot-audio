@@ -11,5 +11,7 @@ extends RefCounted
 #    pitch changed without restarting it, and read back.
 # 3: DotAudioStock (stock footsteps and ambience beds), DotAudioFootsteps, DotAudioAmbience,
 #    DotAudioLoudness and the manager's master limiter (limit_master, loudness_trim_db).
-const LEVEL := 3
+# 4: DotAudioSinkGodot.stream_at (a file with no imported output, as an addon pack brings
+#    it, is decoded from its own bytes).
+const LEVEL := 4
 const OLDEST := 1

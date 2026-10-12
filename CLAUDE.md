@@ -28,6 +28,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `runtime/dot_audio_footsteps.gd` | `DotAudioFootsteps`: steps by distance and surface for any number of bodies; `stepped` |
 | `runtime/dot_audio_ambience.gd` | `DotAudioAmbience`: a bed per map, zones by box, equal-power crossfades |
 | `stock/` | CC0 footsteps (Kenney) and generated beds; `CREDITS.md` |
+| `web/dot_audio_ceiling.js` | the browser's limiter, loaded by a page before the engine |
 | `tools/loudness.sh`, `tools/dot_audio_capture.gd` | record a game under xvfb and measure it; run from a game's root; a game's `tools/loudness_pilot.gd` drives its player |
 | `runtime/dot_audio_manager.gd` | `DotAudioManager`: ids in, limits, `listener_position`, `roll_source`, `play_music`, `duck`, `shape`/`voice` a playing handle |
 | `dot_audio_api.gd` | the API level (`DotAddonApi`); bump `LEVEL` for anything a game can newly call |
@@ -39,7 +40,7 @@ Paths except `examples/` and the repository's `tools/make_ambience.py` (regenera
 
 The family's two steps ([game-dev/CLAUDE.md](../../CLAUDE.md#validating-anything)), then `timeout 120 godot --headless --path . res://examples/audio_selftest.tscn`. `CHECKS` is a total as well as a section count, because a script error aborts one test, not the run.
 
-A green run prints "ObjectDB instances were leaked at exit" and "resources still in use": `--verbose` names them as `AudioStreamPlaybackWAV` / `AudioStreamGeneratorPlayback` objects, one per `play()` the synth section makes, which the dummy driver creates and never mixes. Stopping every voice and freeing the host does not change it. A count that grows without new `play()` calls in the suite is a real leak.
+A green run prints "ObjectDB instances were leaked at exit" and "resources still in use": `--verbose` names them as `AudioStreamPlaybackWAV` / `AudioStreamGeneratorPlayback` objects, one per `play()` the synth section makes, which the dummy driver creates and never mixes. Stopping every voice and freeing the host does not change it. A count that grows without new `play()` calls in the suite is a real leak. Four dot-core scripts "still in use" at exit came with section 13's static stream cache and are the engine's script cache, not a leak.
 
 ## Rules that bite
 
@@ -60,6 +61,8 @@ A green run prints "ObjectDB instances were leaked at exit" and "resources still
 - Measure a level with `addons/dot_audio/tools/loudness.sh` under xvfb, never headless or Movie Maker (Dummy driver, null sink, silence). [loudness](docs/loudness.md#measuring-addonsdot_audiotoolsloudnesssh)
 - Trust a level only from a run whose `capture camera:` line shows the local player moving; a game the stand-in cannot play brings `tools/loudness_pilot.gd` (`drive(capture, ms)` through the capture's `key`/`turn`/`click`/`point`, never moving a body). [loudness](docs/loudness.md#measuring-addonsdot_audiotoolsloudnesssh)
 - Set a game's level in its catalogue; `limit_master` is a backstop (not on the web: sample playback runs no bus effects) and `loudness_trim_db` a measured nudge added to every voice's gain. [loudness](docs/loudness.md#how-it-is-held)
+- A web page loads `web/dot_audio_ceiling.js` before the engine: the browser's limiter, since the engine's does not run there. [loudness](docs/loudness.md#the-browsers-ceiling)
+- A sound path resolves through `DotAudioSinkGodot.stream_at` (the import, else the file's own bytes when an addon pack brought no imported output); never `load()` a def's path directly. [loudness](docs/loudness.md#the-stock-set)
 - A footstep is distance on the ground, silent under `quiet_speed`; a surface comes from the collider (`surface` meta, `surface_<name>` group, node name) else the map's `default_surface`. [loudness](docs/loudness.md#footsteps-dotaudiofootsteps)
 - Every map sets a bed (`set_map_bed`); nothing may be digital silence. Beds are −24 LUFS; regenerate with `tools/make_ambience.py`, never edit an `.ogg` by hand. [loudness](docs/loudness.md#the-stock-set)
 

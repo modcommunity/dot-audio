@@ -6,7 +6,10 @@
 #
 #   addons/dot_audio/tools/loudness.sh [--seconds=40] [--scene=res://x.tscn] [--no-walk]
 #                                      [--fire] [--pilot=res://x.gd] [--keep=out.wav]
-#                                      [--label=name] [-- game args]
+#                                      [--label=name] [--web] [-- game args]
+#
+# --web records the mix with the Master limiter taken off, which is what a web build in
+# sample playback (no bus effects) puts out before the page's own limiter.
 #
 # A game's own tools/loudness_pilot.gd is used when there is one and no --pilot is given
 # (--pilot= with nothing turns it off): it drives the local player through the game's inputs
@@ -43,7 +46,7 @@ if [ ! -s "$out" ]; then
     echo "loudness $label: no recording"; grep -E "^capture|SCRIPT ERROR|ERROR" "$log" | head -5; exit 1
 fi
 [ -n "$keep" ] && cp "$out" "$keep"
-grep -E "^capture (buses|pilot|camera)" "$log" | cut -c1-300 || true
+grep -E "^capture (buses|pilot|camera|web)" "$log" | cut -c1-300 || true
 python3 - "$out" "$label" <<'PY'
 import re, subprocess, sys, statistics
 wav, label = sys.argv[1], sys.argv[2]

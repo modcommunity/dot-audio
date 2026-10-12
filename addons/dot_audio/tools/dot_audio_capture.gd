@@ -94,6 +94,8 @@ func _process(_delta: float) -> bool:
 		1:
 			_drive()
 			if _elapsed() >= _warmup_ms:
+				if _args.has("web"):
+					_as_the_browser_hears_it()
 				_move_record_last()
 				_record.set_recording_active(true)
 				_next(2)
@@ -138,6 +140,19 @@ func _follow_camera() -> void:
 		if step < 10.0 or (cam3 == null and step < 400.0):
 			_camera_travel += step
 	_camera_at = at
+
+
+## --web: the mix a web build in sample playback makes, on this machine. No bus effect runs
+## there, so the Master limiter is taken out; bus volumes and per-voice gains are the same on
+## both. What it measures is how far over the ceiling a browser's output would go with
+## nothing in front of it.
+func _as_the_browser_hears_it() -> void:
+	var removed := 0
+	for i in range(AudioServer.get_bus_effect_count(0) - 1, -1, -1):
+		if AudioServer.get_bus_effect(0, i) is AudioEffectHardLimiter:
+			AudioServer.remove_bus_effect(0, i)
+			removed += 1
+	print("capture web: %d limiter(s) taken off Master" % removed)
 
 
 func _move_record_last() -> void:

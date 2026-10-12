@@ -12,8 +12,8 @@ extends Node
 ## godot --headless --path . res://examples/audio_selftest.tscn
 ## [/codeblock]
 
-const SECTIONS := 12
-const CHECKS := 144
+const SECTIONS := 13
+const CHECKS := 151
 
 var _passed := 0
 var _failed := 0
@@ -44,6 +44,7 @@ func _run() -> void:
 	_test_stock()
 	_test_footsteps()
 	_test_ambience_and_loudness()
+	_test_raw_fallback()
 
 	_line("")
 	_line("%d sections, %d passed, %d failed" % [_section_count, _passed, _failed])
@@ -1010,3 +1011,35 @@ func _test_ambience_and_loudness() -> void:
 	amb.queue_free()
 	m.queue_free()
 
+
+# --- 13 ---------------------------------------------------------------------
+
+func _test_raw_fallback() -> void:
+	_section("An addon pack's sound with no imported output still plays")
+	var stock := DotAudioStock.directory().path_join("footsteps/footstep_wood_0.ogg")
+	var imported := DotAudioSinkGodot.stream_at(stock)
+	_check(imported is AudioStreamOggVorbis, "a stock file in this build loads through its import")
+	_check(not DotAudioSinkGodot._raw.has(stock), "and is not decoded a second way")
+
+	# The shape an overlay pack has: the release zip's .ogg and .ogg.import, and no
+	# .godot/imported output behind the marker.
+	var source := ProjectSettings.globalize_path(stock)
+	var marker := "user://dot_audio_probe_step.ogg.import"
+	var w := FileAccess.open(marker, FileAccess.WRITE)
+	w.store_string('[remap]\n\nimporter="oggvorbisstr"\ntype="AudioStreamOggVorbis"\npath="res://.godot/imported/dot_audio_probe_step.ogg-0000.oggvorbisstr"\n')
+	w.close()
+	var pck := "user://dot_audio_probe.pck"
+	var packer := PCKPacker.new()
+	packer.pck_start(pck)
+	packer.add_file("res://dot_audio_probe/step.ogg", source)
+	packer.add_file("res://dot_audio_probe/step.ogg.import", ProjectSettings.globalize_path(marker))
+	packer.flush()
+	_check(ProjectSettings.load_resource_pack(pck), "a pack shaped like an addon overlay mounts")
+	var path := "res://dot_audio_probe/step.ogg"
+	_check(not DotAudioSinkGodot._import_output_present(path), "its marker names an output the build does not have")
+	var raw := DotAudioSinkGodot.stream_at(path)
+	_check(raw is AudioStreamOggVorbis and raw.get_length() > 0.05, "so the sound is decoded from its own bytes (%.2f s)" % (raw.get_length() if raw != null else 0.0))
+	_check(DotAudioSinkGodot.stream_at(path) == raw, "once: the next play reuses it")
+	_check(DotAudioSinkGodot.stream_at("res://dot_audio_probe/none.ogg") == null, "and a file that is not there is still silence")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(marker))
+	DotAudioSinkGodot._raw.clear()

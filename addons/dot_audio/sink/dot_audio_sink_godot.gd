@@ -45,6 +45,9 @@ var _next := 1
 ## Looping copies of streams, keyed by the stream they were made from. See [method _looped].
 var _loop_copies: Dictionary = {}
 
+## Streams decoded from a file's own bytes, by path. See [method stream_at].
+static var _raw: Dictionary = {}
+
 
 func _init(p_host: Node = null, p_capacity: int = 32) -> void:
 	host = p_host
@@ -60,8 +63,8 @@ func play(request: Dictionary) -> int:
 
 	var stream: AudioStream = null
 
-	if not path.is_empty() and ResourceLoader.exists(path):
-		stream = load(path) as AudioStream
+	if not path.is_empty():
+		stream = stream_at(path)
 
 	# Only once the filesystem has had its turn. See `bank`.
 	if stream == null and not bank.is_empty():
@@ -122,6 +125,67 @@ func play(request: Dictionary) -> int:
 	player.set_meta(&"dot_audio_handle", handle)
 	player.play()
 	return handle
+
+
+## The stream at [param path]: the imported resource when the build has it, else the file's
+## own bytes, else null.
+##
+## [b]Why a second way in.[/b] An addon release reaches players as an overlay pack laid over
+## the build's own [code]res://addons/<dir>/[/code] (dot-cloud's addon packs), and that pack
+## is the addon's release zip: tracked files only, so a sound arrives as [code]x.ogg[/code]
+## and [code]x.ogg.import[/code] with no [code].godot/imported/[/code] output behind it. On a
+## build exported before that sound existed, the importer follows the marker to nothing and
+## the sound is silence. Every file dot-audio itself ships (the stock footsteps and beds)
+## would be silent for a player until a new shell, which is exactly what addon packs exist
+## to avoid. So when the marker's output is missing and the source file is in the pack, it is
+## decoded from its bytes (Ogg Vorbis, WAV or MP3), once per path.
+##
+## The marker is read first rather than trying [code]load[/code] and falling back, because a
+## failed load prints an engine error per attempt, which on a footstep is several a second.
+static func stream_at(path: String) -> AudioStream:
+	if _raw.has(path):
+		return _raw[path]
+	if ResourceLoader.exists(path) and _import_output_present(path):
+		var loaded := load(path) as AudioStream
+		if loaded != null:
+			return loaded
+	if not FileAccess.file_exists(path):
+		return null
+	var raw: AudioStream = null
+	match path.get_extension().to_lower():
+		"ogg":
+			raw = AudioStreamOggVorbis.load_from_file(path)
+		"wav":
+			raw = AudioStreamWAV.load_from_file(path)
+		"mp3":
+			raw = AudioStreamMP3.load_from_file(path)
+	if raw != null:
+		DotLog.debug("audio", "decoded from its own bytes (no imported output)", {"path": path})
+		_raw[path] = raw
+	return raw
+
+
+## Whether the file a path's [code].import[/code] marker names is there. True when there is
+## no marker (a plain resource) or the marker names no single output.
+static func _import_output_present(path: String) -> bool:
+	var marker := path + ".import"
+	if not FileAccess.file_exists(marker):
+		return true
+	var text := FileAccess.get_file_as_string(marker)
+	var at := text.find("\npath=\"")
+	if at < 0:
+		at = text.find("\npath.")
+		if at < 0:
+			return true
+		# One output per feature tag (path.s3tc=...): any of them present will do.
+		var any := false
+		for line in text.split("\n"):
+			if line.begins_with("path.") and line.contains("=\""):
+				var target := line.get_slice("\"", 1)
+				any = any or FileAccess.file_exists(target)
+		return any
+	var target := text.substr(at + 7).get_slice("\"", 0)
+	return FileAccess.file_exists(target)
 
 
 ## A copy of [param stream] that loops, or [param stream] itself when it already does.

@@ -167,15 +167,27 @@ func _step(body: Node3D, st: Dictionary, loudness: float) -> void:
 func surface_under(body: Node3D) -> StringName:
 	var hit := _ground_hit(body)
 	if not hit.is_empty():
-		var s := surface_of_collider(hit.get("collider"))
+		var s := surface_of_collider(hit.get("collider"), int(hit.get("shape", -1)))
 		if s != &"":
 			return s
 	return DotAudioStock.surface_of(String(default_surface))
 
 
-## What a collider says it is made of: `surface` meta on it or up to three parents, a
+## What a collider says it is made of: the hit shape's `surface` meta, then `surface` meta on
+## it or up to three parents, a
 ## `surface_<name>` group, or a surface word in its or a parent's node name. Empty if none.
-static func surface_of_collider(collider: Object) -> StringName:
+##
+## [param shape_index] is the hit's shape: one static body built of many boxes (a map built
+## from a document) names each box's surface on its [CollisionShape3D], which is asked first.
+static func surface_of_collider(collider: Object, shape_index: int = -1) -> StringName:
+	if shape_index >= 0 and collider is CollisionObject3D:
+		var body := collider as CollisionObject3D
+		var owner_id := body.shape_find_owner(shape_index)
+		var shape_node := body.shape_owner_get_owner(owner_id) as Node if owner_id >= 0 else null
+		if shape_node != null and shape_node.has_meta(&"surface"):
+			var from_shape := DotAudioStock.surface_of(str(shape_node.get_meta(&"surface")))
+			if from_shape != &"":
+				return from_shape
 	var node := collider as Node
 	var depth := 0
 	while node != null and depth < 4:

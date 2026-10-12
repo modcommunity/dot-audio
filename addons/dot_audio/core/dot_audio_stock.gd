@@ -23,11 +23,14 @@ const SURFACES: Array[StringName] = [&"concrete", &"wood", &"grass", &"snow", &"
 const ALIASES := {
 	"stone": &"concrete", "rock": &"concrete", "asphalt": &"concrete", "road": &"concrete",
 	"tile": &"concrete", "brick": &"concrete", "cement": &"concrete", "pavement": &"concrete",
+	"sidewalk": &"concrete", "kerb": &"concrete", "curb": &"concrete", "roof": &"concrete",
 	"plank": &"wood", "wooden": &"wood", "floorboard": &"wood", "deck": &"wood",
+	"parquet": &"wood", "gym": &"wood", "stage": &"wood",
 	"dirt": &"grass", "earth": &"grass", "mud": &"grass", "sand": &"grass", "gravel": &"grass",
 	"leaves": &"grass", "lawn": &"grass", "turf": &"grass", "field": &"grass",
 	"ice": &"snow",
 	"rug": &"carpet", "fabric": &"carpet", "mat": &"carpet", "cloth": &"carpet", "foam": &"carpet",
+	"rubber": &"carpet", "linoleum": &"carpet", "mattress": &"carpet",
 	"steel": &"metal", "iron": &"metal", "grate": &"metal", "grating": &"metal", "tin": &"metal",
 }
 

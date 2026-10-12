@@ -13,7 +13,7 @@ extends Node
 ## [/codeblock]
 
 const SECTIONS := 12
-const CHECKS := 141
+const CHECKS := 142
 
 var _passed := 0
 var _failed := 0
@@ -903,10 +903,18 @@ func _test_footsteps() -> void:
 	var child := StaticBody3D.new()
 	child.name = "Slab"
 	tile.add_child(child)
+	var box := CollisionShape3D.new()
+	box.shape = BoxShape3D.new()
+	box.set_meta(&"surface", "parquet")
+	floor.add_child(box)
 	add_child(floor)
 	add_child(tile)
 	_check(DotAudioFootsteps.surface_of_collider(floor) == &"wood", "a collider's surface meta names it")
 	_check(DotAudioFootsteps.surface_of_collider(child) == &"concrete", "a parent's surface group does too")
+	_check(
+		DotAudioFootsteps.surface_of_collider(floor, 0) == &"wood" and DotAudioStock.surface_of("sidewalk") == &"concrete",
+		"and the hit shape's own meta comes first, for a body built of many boxes"
+	)
 	steps.track(floor, {"surface": &"metal"})
 	_check(steps.tracked_count() == 2, "any number of bodies, each with its own options")
 	steps.untrack(floor)

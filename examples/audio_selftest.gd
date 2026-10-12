@@ -13,7 +13,7 @@ extends Node
 ## [/codeblock]
 
 const SECTIONS := 12
-const CHECKS := 139
+const CHECKS := 140
 
 var _passed := 0
 var _failed := 0
@@ -909,6 +909,9 @@ func _test_footsteps() -> void:
 	steps.track(floor, {"surface": &"metal"})
 	_check(steps.tracked_count() == 2, "any number of bodies, each with its own options")
 	steps.untrack(floor)
+	steps.keep([body, floor])
+	steps.keep([floor])
+	_check(steps.is_tracking(floor) and not steps.is_tracking(body), "keep() tracks exactly the bodies it is handed")
 
 	floor.queue_free()
 	tile.queue_free()

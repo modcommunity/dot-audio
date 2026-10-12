@@ -68,6 +68,20 @@ func track(body: Node3D, opts: Dictionary = {}) -> void:
 	}
 
 
+## Tracks exactly these bodies: starts the new ones and drops the rest. For a game that
+## holds its players in a dictionary and calls this once a frame with its values.
+func keep(bodies: Array, opts: Dictionary = {}) -> void:
+	var seen := {}
+	for b: Variant in bodies:
+		if b is Node3D and is_instance_valid(b):
+			seen[b] = true
+			if not _bodies.has(b):
+				track(b, opts)
+	for b: Variant in _bodies.keys():
+		if not seen.has(b):
+			_bodies.erase(b)
+
+
 func untrack(body: Node3D) -> void:
 	_bodies.erase(body)
 
@@ -131,8 +145,10 @@ func _grounded(body: Node3D, st: Dictionary) -> bool:
 	var opts: Dictionary = st["opts"]
 	if opts.get("grounded") is Callable:
 		return bool((opts["grounded"] as Callable).call())
-	if body is CharacterBody3D:
-		return (body as CharacterBody3D).is_on_floor()
+	# A CharacterBody3D that is not simulated here (a remote player placed from snapshots)
+	# keeps a stale is_on_floor(), so a false one is asked again of the ground itself.
+	if body is CharacterBody3D and (body as CharacterBody3D).is_on_floor():
+		return true
 	return _ground_hit(body).size() > 0
 
 

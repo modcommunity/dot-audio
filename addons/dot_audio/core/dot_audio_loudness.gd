@@ -19,9 +19,9 @@ const BAND_LOW := -18.0
 const BAND_HIGH := -16.0
 const TRUE_PEAK_CEILING := -1.0
 
-## The limiter's sample ceiling. Half a decibel under the true-peak ceiling, because the
+## The limiter's sample ceiling. A decibel under the true-peak ceiling, because the
 ## peaks between samples of a limited signal land a little above its sample peaks.
-const LIMITER_CEILING_DB := -1.5
+const LIMITER_CEILING_DB := -2.0
 
 
 ## Puts the family's limiter at the end of the Master bus, or retunes the one already there.

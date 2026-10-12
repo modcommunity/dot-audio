@@ -47,7 +47,7 @@ signal music_changed(from_id: StringName, to_id: StringName)
 @export var register_as_service: bool = true
 
 ## Puts the family's limiter at the end of the Master bus (DotAudioLoudness): a ceiling at
-## -1.5 dBFS so ten sounds at once cannot clip. On by default because every game wants it
+## -2 dBFS so ten sounds at once cannot clip. On by default because every game wants it
 ## and a game that forgot it is the one that clipped in the first play test.
 @export var limit_master: bool = true
 

@@ -45,8 +45,9 @@ var _next := 1
 ## Looping copies of streams, keyed by the stream they were made from. See [method _looped].
 var _loop_copies: Dictionary = {}
 
-## Streams decoded from a file's own bytes, by path. See [method stream_at].
-static var _raw: Dictionary = {}
+## Streams decoded from a file's own bytes, by path. See [method stream_at]. In a file of its
+## own, never a `static var` here: one here kept a game's whole run alive at exit (see that file).
+const _RAW := preload("dot_audio_raw_streams.gd")
 
 
 func _init(p_host: Node = null, p_capacity: int = 32) -> void:
@@ -143,8 +144,8 @@ func play(request: Dictionary) -> int:
 ## The marker is read first rather than trying [code]load[/code] and falling back, because a
 ## failed load prints an engine error per attempt, which on a footstep is several a second.
 static func stream_at(path: String) -> AudioStream:
-	if _raw.has(path):
-		return _raw[path]
+	if _RAW.streams.has(path):
+		return _RAW.streams[path]
 	if ResourceLoader.exists(path) and _import_output_present(path):
 		var loaded := load(path) as AudioStream
 		if loaded != null:
@@ -161,7 +162,7 @@ static func stream_at(path: String) -> AudioStream:
 			raw = AudioStreamMP3.load_from_file(path)
 	if raw != null:
 		DotLog.debug("audio", "decoded from its own bytes (no imported output)", {"path": path})
-		_raw[path] = raw
+		_RAW.streams[path] = raw
 	return raw
 
 

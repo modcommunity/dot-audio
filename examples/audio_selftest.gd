@@ -12,8 +12,8 @@ extends Node
 ## godot --headless --path . res://examples/audio_selftest.tscn
 ## [/codeblock]
 
-const SECTIONS := 13
-const CHECKS := 151
+const SECTIONS := 14
+const CHECKS := 153
 
 var _passed := 0
 var _failed := 0
@@ -45,6 +45,7 @@ func _run() -> void:
 	_test_footsteps()
 	_test_ambience_and_loudness()
 	_test_raw_fallback()
+	_test_nothing_kept_alive_at_exit()
 
 	_line("")
 	_line("%d sections, %d passed, %d failed" % [_section_count, _passed, _failed])
@@ -1019,7 +1020,7 @@ func _test_raw_fallback() -> void:
 	var stock := DotAudioStock.directory().path_join("footsteps/footstep_wood_0.ogg")
 	var imported := DotAudioSinkGodot.stream_at(stock)
 	_check(imported is AudioStreamOggVorbis, "a stock file in this build loads through its import")
-	_check(not DotAudioSinkGodot._raw.has(stock), "and is not decoded a second way")
+	_check(not DotAudioSinkGodot._RAW.streams.has(stock), "and is not decoded a second way")
 
 	# The shape an overlay pack has: the release zip's .ogg and .ogg.import, and no
 	# .godot/imported output behind the marker.
@@ -1042,4 +1043,29 @@ func _test_raw_fallback() -> void:
 	_check(DotAudioSinkGodot.stream_at(path) == raw, "once: the next play reuses it")
 	_check(DotAudioSinkGodot.stream_at("res://dot_audio_probe/none.ogg") == null, "and a file that is not there is still silence")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(marker))
-	DotAudioSinkGodot._raw.clear()
+	DotAudioSinkGodot._RAW.streams.clear()
+
+
+# --- 14 ---------------------------------------------------------------------
+
+## [b]Loading dot-audio must not keep a game alive at exit.[/b] mg-dangerous-delivery's suite
+## named DotAudioFootsteps and every run ended with 182 resources and their meshes, materials,
+## textures and shaders still in use, all checks green: a `static var` on DotAudioSinkGodot,
+## compiled in that order, held the scripts a game had already preloaded (see
+## addons/dot_audio/sink/dot_audio_raw_streams.gd). Only a process's own exit can show it, so a
+## child process loads dot-audio in the order that did it and this reads its stderr.
+func _test_nothing_kept_alive_at_exit() -> void:
+	_section("Nothing kept alive at exit")
+	var output: Array = []
+	var args := PackedStringArray([
+		"--headless", "--path", ProjectSettings.globalize_path("res://"),
+		"res://examples/exit_leak_probe.tscn",
+	])
+	var code := OS.execute(OS.get_executable_path(), args, output, true)
+	var text := "\n".join(output)
+	_check(code == 0 and text.contains("exit probe: 2 scripts named"),
+		"a process that loads dot-audio as a game's suite does runs and quits (exit %d)" % code)
+	var kept := text.contains("still in use at exit") or text.contains("were leaked at exit")
+	_check(not kept, "and leaves nothing in use at exit%s" % (
+		"" if not kept else ": " + " | ".join(Array(text.split("\n")).filter(
+			func(l: String) -> bool: return l.contains("at exit")))))

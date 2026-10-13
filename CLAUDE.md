@@ -22,7 +22,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `core/dot_audio_catalogue.gd` | `DotAudioCatalogue`: `validate()` (the document), `missing_files()` (the disk) |
 | `core/dot_audio_mixer.gd` | `DotAudioMixer`: sliders and the `linear_to_db` curve, a `DotConfig` |
 | `core/dot_audio_synth.gd` | `DotAudioSynth`: thirteen role voices baked to `AudioStreamWAV` |
-| `sink/` | `DotAudioSink` (`device_present()`), `DotAudioSinkGodot` (pool, stealing, `bank`), `DotAudioSinkNull` |
+| `sink/` | `DotAudioSink` (`device_present()`), `DotAudioSinkGodot` (pool, stealing, `bank`), `DotAudioSinkNull`, `dot_audio_raw_streams.gd` (`stream_at`'s cache, by path) |
 | `core/dot_audio_stock.gd` | `DotAudioStock`: the stock footsteps and beds as defs, `add_to`, surface names and aliases |
 | `core/dot_audio_loudness.gd` | `DotAudioLoudness`: the standard's numbers, `install_limiter` |
 | `runtime/dot_audio_footsteps.gd` | `DotAudioFootsteps`: steps by distance and surface for any number of bodies; `stepped` |
@@ -33,6 +33,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `runtime/dot_audio_manager.gd` | `DotAudioManager`: ids in, limits, `listener_position`, `roll_source`, `play_music`, `duck`, `shape`/`voice` a playing handle |
 | `dot_audio_api.gd` | the API level (`DotAddonApi`); bump `LEVEL` for anything a game can newly call |
 | `examples/audio_selftest.tscn` | the suite; needs no sound card |
+| `examples/exit_leak_probe.tscn` | loads dot-audio as a game's suite does and quits; the suite runs it as a child and reads its stderr |
 
 Paths except `examples/` and the repository's `tools/make_ambience.py` (regenerates the beds) are in `addons/dot_audio/`.
 
@@ -40,7 +41,7 @@ Paths except `examples/` and the repository's `tools/make_ambience.py` (regenera
 
 The family's two steps ([game-dev/CLAUDE.md](../../CLAUDE.md#validating-anything)), then `timeout 120 godot --headless --path . res://examples/audio_selftest.tscn`. `CHECKS` is a total as well as a section count, because a script error aborts one test, not the run.
 
-A green run prints "ObjectDB instances were leaked at exit" and "resources still in use": `--verbose` names them as `AudioStreamPlaybackWAV` / `AudioStreamGeneratorPlayback` objects, one per `play()` the synth section makes, which the dummy driver creates and never mixes. Stopping every voice and freeing the host does not change it. A count that grows without new `play()` calls in the suite is a real leak. Four dot-core scripts "still in use" at exit came with section 13's static stream cache and are the engine's script cache, not a leak.
+A green run prints "3 ObjectDB instances were leaked at exit": `--verbose` names them as `AudioStreamPlaybackWAV` / `AudioStreamGeneratorPlayback` objects from the synth section's `play()` calls, which the dummy driver creates and never mixes. Stopping every voice and freeing the host does not change it. A count that grows without new `play()` calls in the suite is a real leak, and any "resources still in use" line is one (section 14 runs `examples/exit_leak_probe.tscn` in a child process and fails on it). [history](docs/history.md#a-static-cache-kept-a-games-whole-run-alive-at-exit-2026-10-12)
 
 ## Rules that bite
 
@@ -53,6 +54,7 @@ A green run prints "ObjectDB instances were leaked at exit" and "resources still
 - Variants and pitch come from a roll; give `roll_source` a `DotRandomStream` for reproducible sound. [design](docs/design.md#variation-belongs-in-the-document)
 - A missing sound is a debug-logged refusal, never an error. [design](docs/design.md#a-missing-sound-is-silence-not-an-error)
 - Change a playing voice with `manager.shape(h, volume_scale, pitch_scale)` (play()'s units, def gain and rolled pitch kept), never by restarting it or subclassing the Godot sink. [design](docs/design.md#a-playing-voice-is-shaped-in-plays-units)
+- No `static var` written by its own static function in a script that extends another (the sinks): the engine's 4.7.2 exit teardown then kept a game's whole run alive at exit. Such a cache is a script of its own (`sink/dot_audio_raw_streams.gd`). [history](docs/history.md#a-static-cache-kept-a-games-whole-run-alive-at-exit-2026-10-12)
 - Loop a copy of the stream, never the shared one. [design](docs/design.md#looping-copies-the-stream)
 - Reap where a count is consulted, not only in `_process` (which stops while paused). [design](docs/design.md#reaping-happens-at-the-point-of-refusal)
 - A real file always outranks the synth bank; which voice stands in for which id is the game's `sound_recipes()`. [design](docs/design.md#the-synthesiser-is-consulted-after-the-filesystem-never-before)

@@ -1,0 +1,26 @@
+# comments
+# Baselines only shrink: scripts/<gate> --update lowers or drops entries and refuses to add.
+addons/dot_audio/core/dot_audio_catalogue.gd::long_block	2
+addons/dot_audio/core/dot_audio_def.gd::long_block	9
+addons/dot_audio/core/dot_audio_loudness.gd::long_block	2
+addons/dot_audio/core/dot_audio_mixer.gd::long_block	5
+addons/dot_audio/core/dot_audio_stock.gd::long_block	1
+addons/dot_audio/core/dot_audio_synth.gd::long_block	7
+addons/dot_audio/dot_audio_api.gd::long_block	2
+addons/dot_audio/dot_audio_plugin.gd::long_block	1
+addons/dot_audio/runtime/dot_audio_ambience.gd::long_block	1
+addons/dot_audio/runtime/dot_audio_footsteps.gd::long_block	2
+addons/dot_audio/runtime/dot_audio_manager.gd::banner	3
+addons/dot_audio/runtime/dot_audio_manager.gd::long_block	17
+addons/dot_audio/sink/dot_audio_raw_streams.gd::long_block	1
+addons/dot_audio/sink/dot_audio_sink.gd::history	1
+addons/dot_audio/sink/dot_audio_sink.gd::long_block	6
+addons/dot_audio/sink/dot_audio_sink_godot.gd::history	1
+addons/dot_audio/sink/dot_audio_sink_godot.gd::long_block	7
+addons/dot_audio/sink/dot_audio_sink_null.gd::long_block	2
+addons/dot_audio/tools/dot_audio_capture.gd::banner	1
+addons/dot_audio/tools/dot_audio_capture.gd::long_block	3
+examples/audio_selftest.gd::banner	18
+examples/audio_selftest.gd::history	1
+examples/audio_selftest.gd::long_block	3
+examples/exit_leak_probe.gd::long_block	1

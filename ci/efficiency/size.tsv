@@ -1,0 +1,7 @@
+# size
+# Baselines only shrink: scripts/<gate> --update lowers or drops entries and refuses to add.
+addons/dot_audio/sink/dot_audio_sink_godot.gd::play	88
+examples/audio_selftest.gd	1071
+examples/audio_selftest.gd::_test_footsteps	99
+examples/audio_selftest.gd::_test_shaping	117
+examples/audio_selftest.gd::_test_synth	180

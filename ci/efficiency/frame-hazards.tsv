@@ -1,0 +1,7 @@
+# frame-hazards
+# Baselines only shrink: scripts/<gate> --update lowers or drops entries and refuses to add.
+addons/dot_audio/runtime/dot_audio_ambience.gd::bed_at::alloc_dict	1
+addons/dot_audio/runtime/dot_audio_manager.gd::_reap::duplicate	1
+addons/dot_audio/tools/dot_audio_capture.gd::_as_the_browser_hears_it::string_build	1
+addons/dot_audio/tools/dot_audio_capture.gd::_finish::string_build	5
+addons/dot_audio/tools/dot_audio_capture.gd::_process::string_build	2

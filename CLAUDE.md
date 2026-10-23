@@ -55,6 +55,7 @@ A green run prints "3 ObjectDB instances were leaked at exit": `--verbose` names
 - A missing sound is a debug-logged refusal, never an error. [design](docs/design.md#a-missing-sound-is-silence-not-an-error)
 - Change a playing voice with `manager.shape(h, volume_scale, pitch_scale)` (play()'s units, def gain and rolled pitch kept), never by restarting it or subclassing the Godot sink. [design](docs/design.md#a-playing-voice-is-shaped-in-plays-units)
 - No `static var` written by its own static function in a script that extends another (the sinks): the engine's 4.7.2 exit teardown then kept a game's whole run alive at exit. Such a cache is a script of its own (`sink/dot_audio_raw_streams.gd`). [history](docs/history.md#a-static-cache-kept-a-games-whole-run-alive-at-exit-2026-10-12)
+- A process that ran `stream_at` calls `DotAudioSinkGodot.clear_streams()` before `quit()` (after the last manager left the tree), or the cached streams are "resources still in use" at exit. [history](docs/history.md#a-static-cache-kept-a-games-whole-run-alive-at-exit-2026-10-12)
 - Loop a copy of the stream, never the shared one. [design](docs/design.md#looping-copies-the-stream)
 - Reap where a count is consulted, not only in `_process` (which stops while paused). [design](docs/design.md#reaping-happens-at-the-point-of-refusal)
 - A real file always outranks the synth bank; which voice stands in for which id is the game's `sound_recipes()`. [design](docs/design.md#the-synthesiser-is-consulted-after-the-filesystem-never-before)

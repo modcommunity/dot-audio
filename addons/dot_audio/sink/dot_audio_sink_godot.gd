@@ -166,6 +166,12 @@ static func stream_at(path: String) -> AudioStream:
 	return raw
 
 
+## Drops [method stream_at]'s cache. Call after the last manager has left the tree, before
+## `quit()`, so a process exits with no stream still in use.
+static func clear_streams() -> void:
+	_RAW.clear()
+
+
 ## Whether the file a path's [code].import[/code] marker names is there. True when there is
 ## no marker (a plain resource) or the marker names no single output.
 static func _import_output_present(path: String) -> bool:

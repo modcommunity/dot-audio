@@ -13,7 +13,7 @@ extends Node
 ## [/codeblock]
 
 const SECTIONS := 14
-const CHECKS := 153
+const CHECKS := 154
 
 var _passed := 0
 var _failed := 0
@@ -1043,7 +1043,8 @@ func _test_raw_fallback() -> void:
 	_check(DotAudioSinkGodot.stream_at(path) == raw, "once: the next play reuses it")
 	_check(DotAudioSinkGodot.stream_at("res://dot_audio_probe/none.ogg") == null, "and a file that is not there is still silence")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(marker))
-	DotAudioSinkGodot._RAW.streams.clear()
+	DotAudioSinkGodot.clear_streams()
+	_check(DotAudioSinkGodot._RAW.streams.is_empty(), "clear_streams() drops the cache so a process can exit with no stream in use")
 
 
 # --- 14 ---------------------------------------------------------------------

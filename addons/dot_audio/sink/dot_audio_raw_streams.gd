@@ -16,3 +16,9 @@ extends RefCounted
 ## The same static var here, written from another script, does not do it.
 
 static var streams: Dictionary = {}
+
+
+## Drops every cached stream so a process can exit with none still in use. Call it after the
+## last manager has left the tree and before `quit()`; streams are decoded again on demand.
+static func clear() -> void:
+	streams.clear()

@@ -15,7 +15,7 @@ const INTERIOR_HORROR := &"interior_horror"
 
 ## Order is the tie-break: horror and caves outrank the generic ones.
 const KEYWORDS := [
-	[INTERIOR_HORROR, ["spooky", "infested", "zombie", "horror", "haunt", "ghost", "creep", "eerie", "morgue", "cellblock", "asylum", "chapel", "grave", "scary", "prison", "laborat", "_lab"]],
+	[INTERIOR_HORROR, ["spooky", "infested", "zombie", "horror", "haunt", "ghost", "creep", "eerie", "morgue", "cellblock", "asylum", "chapel", "grave", "scary", "prison", "laborat", "_lab", "hospital", "manor", "goth"]],
 	[CAVE_TUNNEL, ["cave", "tunnel", "mine", "drip", "sewer", "canal", "cellar", "basement", "underground", "crypt", "cavern", "pipe"]],
 	[SNOW_WIND, ["snow", "wind", "frozen", "arctic", "antarctic", "blizzard", "mountain", "gust"]],
 	[SWAMP, ["swamp", "marsh", "bog", "jungle", "slime", "river", "lake", "pond", "frog", "bubbl", "water"]],

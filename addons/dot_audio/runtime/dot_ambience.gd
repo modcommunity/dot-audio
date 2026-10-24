@@ -19,6 +19,7 @@ extends Node
 
 const CHANNEL := "audio.ambience"
 const ID_PREFIX := "ambience/"
+const RETRY_SECONDS := 2.0
 
 signal mood_changed(from_id: StringName, to_id: StringName)
 signal oneshot_played(mood_id: StringName, file: String, position: Vector3)
@@ -48,6 +49,8 @@ var _holders := {"pause": {}, "duck": {}, "hush": {}}
 var _played := 0
 var _last_shot := {}
 var _registered := {}
+# When a mood whose beds all failed to start may try again, so a missing catalogue is not retried every frame.
+var _retry_at := 0.0
 
 
 func _init() -> void:
@@ -160,6 +163,14 @@ func target_level() -> float:
 	return config.volume * scale
 
 
+func _exit_tree() -> void:
+	if manager != null and is_instance_valid(manager):
+		for h: int in _voices.keys():
+			manager.stop(h)
+	_voices.clear()
+	_timers.clear()
+
+
 func _process(delta: float) -> void:
 	advance(delta)
 
@@ -189,8 +200,9 @@ func _duck_scale() -> float:
 func _apply_mood() -> void:
 	var want := effective_mood()
 	if want == _current:
-		if _current != &"" and manager != null and _voices.is_empty() and not _moods[_current].beds.is_empty():
-			_start_mood(_current)
+		if _current != &"" and manager != null and _voices.is_empty() and not _moods[_current].beds.is_empty() and _clock >= _retry_at:
+			_retry_at = _clock + RETRY_SECONDS
+			_start_mood(_current, true)
 		return
 	var from := _current
 	_current = want
@@ -204,7 +216,7 @@ func _apply_mood() -> void:
 	DotLog.debug(CHANNEL, "ambience mood", {"from": String(from), "to": String(want)})
 
 
-func _start_mood(id: StringName) -> void:
+func _start_mood(id: StringName, retry: bool = false) -> void:
 	if manager == null or not _moods.has(id):
 		return
 	_register(id)
@@ -219,6 +231,8 @@ func _start_mood(id: StringName) -> void:
 		var h := manager.play(def_id, 0.001)
 		if h != 0:
 			_voices[h] = {"id": def_id, "gain": 0.0 if fade > 0.0 else 1.0, "target": 1.0, "volume": float(bed["volume"]) * m.volume}
+	if retry and not _timers.is_empty():
+		return
 	_timers.clear()
 	i = 0
 	for shot: Dictionary in m.oneshots:

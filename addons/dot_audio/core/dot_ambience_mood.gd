@@ -32,7 +32,8 @@ static func from_dictionary(id: String, doc: Dictionary, base: String, dropped: 
 		if not (raw is Dictionary):
 			continue
 		var d := raw as Dictionary
-		var names: Array = d.get("files", [d.get("file", "")])
+		var raw_files: Variant = d.get("files", d.get("file", ""))
+		var names: Array = raw_files if raw_files is Array else [raw_files]
 		var files := PackedStringArray()
 		for n: Variant in names:
 			var path := _join(base, str(n))

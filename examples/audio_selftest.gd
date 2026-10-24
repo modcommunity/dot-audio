@@ -13,7 +13,7 @@ extends Node
 ## [/codeblock]
 
 const SECTIONS := 15
-const CHECKS := 195
+const CHECKS := 198
 
 var _passed := 0
 var _failed := 0
@@ -1193,6 +1193,33 @@ func _test_creepy_ambience() -> void:
 	_check(DotAmbienceMoods.vote(["prison.general_dripping_tunnel", "coast.util_windgusts"]) == DotAmbienceMoods.INTERIOR_HORROR, "the first table row breaks a tie")
 	_check(DotAmbienceMoods.vote(["xyzzy"], &"indoor_hall") == &"indoor_hall", "and a name that matches nothing gives the fallback")
 	_check(DotAmbienceMoods.vote(DotAmbienceMoods.names_in({"soundscapes": [{"soundscape": "bedroom_rain"}], "ambient": [{"message": "ambient/wind/windgust.wav", "stand_in": "wind"}]})) != &"", "a map's sounds block is read for names")
+
+	var live: Array = amb._voices.keys()
+	var was_playing := live.any(func(h: int) -> bool: return m.is_playing(h))
+	remove_child(amb)
+	_check(was_playing and not live.any(func(h: int) -> bool: return m.is_playing(h)), "leaving the tree stops its beds")
+	add_child(amb)
+
+	# No catalogue: no bed can start; the one-shot timers must survive the retries, not be re-rolled.
+	var m2 := _manager(null, 4)
+	var amb2 := DotAmbience.new()
+	amb2.manager = m2
+	amb2.seed_random(3)
+	add_child(amb2)
+	amb2.set_process(false)
+	amb2.add_set_dir(dir)
+	amb2.set_mood(&"alpha")
+	amb2.advance(0.1)
+	var nexts: Array = amb2._timers.map(func(t: Dictionary) -> float: return float(t["next"]))
+	amb2.advance(1.0)
+	amb2.advance(1.0)
+	amb2.advance(1.0)
+	_check(not nexts.is_empty() and nexts == amb2._timers.map(func(t: Dictionary) -> float: return float(t["next"])), "a mood that cannot start its beds does not re-roll its one-shot timers every step")
+	amb2.queue_free()
+	m2.queue_free()
+
+	var sm := DotAmbienceMood.from_dictionary("s", {"oneshots": [{"files": "a_shot1.wav"}]}, dir, PackedStringArray())
+	_check(sm.oneshots.size() == 1 and sm.oneshots[0]["files"].size() == 1, "a one-shot's files may be a single string")
 
 	amb.queue_free()
 	m.queue_free()

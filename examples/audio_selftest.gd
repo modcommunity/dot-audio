@@ -13,7 +13,7 @@ extends Node
 ## [/codeblock]
 
 const SECTIONS := 15
-const CHECKS := 198
+const CHECKS := 204
 
 var _passed := 0
 var _failed := 0
@@ -1193,6 +1193,30 @@ func _test_creepy_ambience() -> void:
 	_check(DotAmbienceMoods.vote(["prison.general_dripping_tunnel", "coast.util_windgusts"]) == DotAmbienceMoods.INTERIOR_HORROR, "the first table row breaks a tie")
 	_check(DotAmbienceMoods.vote(["xyzzy"], &"indoor_hall") == &"indoor_hall", "and a name that matches nothing gives the fallback")
 	_check(DotAmbienceMoods.vote(DotAmbienceMoods.names_in({"soundscapes": [{"soundscape": "bedroom_rain"}], "ambient": [{"message": "ambient/wind/windgust.wav", "stand_in": "wind"}]})) != &"", "a map's sounds block is read for names")
+
+	amb.set_mood(&"alpha")
+	amb.indoor_mood = &"beta"
+	amb.advance(0.1)
+	_check(amb.mood() == &"alpha", "outdoors the requested mood plays")
+	amb.set_indoors(true)
+	amb.advance(0.1)
+	_check(amb.mood() == &"beta" and amb.describe()["indoors"], "under a roof the indoor mood takes over")
+	amb.config.follow_indoors = false
+	amb.advance(0.1)
+	_check(amb.mood() == &"alpha", "and the config can keep it outdoors")
+	amb.config.follow_indoors = true
+	amb.set_indoors(false)
+	amb.advance(0.1)
+	_check(amb.mood() == &"alpha", "stepping out brings the outdoor mood back")
+	amb.indoor_mood = &""
+	var merged := amb.mood_def(&"alpha").with_oneshots_of(amb.mood_def(&"beta"), &"alpha+beta")
+	_check(merged.oneshots.size() == amb.mood_def(&"alpha").oneshots.size() + amb.mood_def(&"beta").oneshots.size() and merged.beds.size() == amb.mood_def(&"alpha").beds.size(), "a mood can borrow another's one-shots")
+	var roof := DotAmbienceRoof.new()
+	var flips := 0
+	for hit in [true, false, true, true, true, false, false, false, true, false, false, false, false]:
+		if roof.feed(hit):
+			flips += 1
+	_check(roof.roofed == false and flips == 2, "the roof probe needs agreeing rays to flip (%d flips)" % flips)
 
 	var live: Array = amb._voices.keys()
 	var was_playing := live.any(func(h: int) -> bool: return m.is_playing(h))

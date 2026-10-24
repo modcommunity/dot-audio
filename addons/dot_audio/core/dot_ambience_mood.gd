@@ -80,6 +80,18 @@ static func from_folder(id: String, dir: String) -> DotAmbienceMood:
 	return m
 
 
+## A copy of this mood named [param new_name] whose one-shots also include [param other]'s: a map that
+## wants a few sounds from a second mood.
+func with_oneshots_of(other: DotAmbienceMood, new_name: StringName) -> DotAmbienceMood:
+	var m := DotAmbienceMood.new()
+	m.name = new_name
+	m.volume = volume
+	m.beds = beds.duplicate()
+	m.oneshots = oneshots.duplicate()
+	m.oneshots.append_array(other.oneshots)
+	return m
+
+
 func is_empty() -> bool:
 	return beds.is_empty() and oneshots.is_empty()
 

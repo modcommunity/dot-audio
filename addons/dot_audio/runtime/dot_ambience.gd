@@ -36,7 +36,11 @@ var default_mood: StringName = &""
 ## Bus the layer plays on.
 var bus: StringName = &"Ambience"
 
+## Mood that plays while [method set_indoors] is true; empty keeps the requested mood indoors too.
+var indoor_mood: StringName = &""
+
 var _moods: Dictionary = {}
+var _indoors := false
 var _requested: StringName = &""
 var _current: StringName = &""
 var _rng := RandomNumberGenerator.new()
@@ -87,6 +91,21 @@ func load_custom() -> DotResult:
 	return add_set_dir(config.sound_dir)
 
 
+## The mood named [param id], or null.
+func mood_def(id: StringName) -> DotAmbienceMood:
+	return _moods.get(id) as DotAmbienceMood
+
+
+## Tells the layer the listener is under a roof (see [DotAmbienceRoof]); it crosses over to
+## [member indoor_mood] at the config's crossfade, and back. Ignored when [member DotAmbienceConfig.follow_indoors] is off.
+func set_indoors(inside: bool) -> void:
+	_indoors = inside
+
+
+func indoors() -> bool:
+	return _indoors
+
+
 func mood_names() -> PackedStringArray:
 	var out := PackedStringArray()
 	for k: StringName in _moods:
@@ -111,6 +130,8 @@ func effective_mood() -> StringName:
 	if forced != &"" and _moods.has(forced):
 		return forced
 	var allowed := config.allowed()
+	if _indoors and config.follow_indoors and indoor_mood != &"" and _moods.has(indoor_mood) and (allowed.is_empty() or String(indoor_mood) in allowed):
+		return indoor_mood
 	if _requested != &"" and (allowed.is_empty() or String(_requested) in allowed):
 		return _requested
 	if default_mood != &"" and _moods.has(default_mood) and (allowed.is_empty() or String(default_mood) in allowed):
@@ -351,7 +372,7 @@ func describe() -> Dictionary:
 		shots.append(snappedf(float(t["next"]) - _clock, 0.1))
 	return {
 		"enabled": config.enabled, "mood": String(_current), "requested": String(_requested),
-		"override": config.mood, "allowed": config.allowed_moods, "moods": mood_names(),
+		"override": config.mood, "indoors": _indoors, "indoor_mood": String(indoor_mood), "allowed": config.allowed_moods, "moods": mood_names(),
 		"volume": config.volume, "level": snappedf(_level, 0.001), "frequency": config.frequency,
 		"beds": _voices.size(), "paused": _holders["pause"].keys(), "ducked": _holders["duck"].keys(),
 		"hushed": _holders["hush"].keys(), "oneshots_played": _played, "next_oneshot_in": shots, "last": _last_shot,

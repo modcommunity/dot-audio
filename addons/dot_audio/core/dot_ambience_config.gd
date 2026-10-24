@@ -23,6 +23,9 @@ extends DotConfig
 ## Its moods replace a built-in mood of the same name.
 @export var sound_dir: String = ""
 
+## Whether [method DotAmbience.set_indoors] switches to the indoor mood. Off keeps the outdoor one.
+@export var follow_indoors: bool = true
+
 ## Seconds a mood change takes to cross over.
 @export_range(0.5, 30.0, 0.5) var crossfade_seconds: float = 6.0
 

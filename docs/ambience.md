@@ -27,6 +27,7 @@ Defaults < JSON file < environment (`DOT_AMBIENCE_*`) < command line (`--ambienc
 | `allowed_moods` | empty | comma list; a request outside it gives way to the default or the first allowed mood |
 | `sound_dir` | empty | extra sound set; its moods replace built-in ones of the same name |
 | `crossfade_seconds` | 6 | a mood change, equal power |
+| `follow_indoors` | true | `set_indoors(true)` switches to `indoor_mood`; off ignores it |
 
 ## A sound set
 
@@ -45,3 +46,7 @@ With no `moods.json`, each subfolder is a mood: files named `bed*` or `loop*` ar
 ## Map to mood
 
 `DotAmbienceMoods.vote(names, fallback)` counts keyword hits (soundscape names, ambient sound file names and stand-ins from a converted map's `sounds` block, via `names_in`) for eight moods: `outdoor_night`, `indoor_hall`, `industrial`, `cave_tunnel`, `snow_wind`, `swamp`, `city_ruins`, `interior_horror`. A tie goes to the earlier row (horror first). A game lets its own per-map field win over the vote.
+
+## Indoors and outdoors
+
+A game sets `ambience.indoor_mood` (the mood to use under a roof) and calls `set_indoors(bool)`; `effective_mood` then prefers `indoor_mood` while indoors, if `DotAmbienceConfig.follow_indoors` is on and the mood is allowed, and the usual crossfade does the rest. `indoors()` and `mood_def(id)` read the state back, and `describe()` shows both. `DotAmbienceRoof` finds the roof: `step(delta, at, space)` casts one reused upward ray (`height` 8 m, every `interval` 0.25 s) and returns true when `roofed` flips; it needs 2 hits in a row to go indoors and 4 misses to leave, so a doorway or a lamp post does not flap the mood. `DotAmbienceMood.with_oneshots_of(other, name)` builds a mood that adds another's one-shots to its own.

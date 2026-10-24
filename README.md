@@ -62,6 +62,10 @@ Three things every game needs and none should write again:
 
 The stock files are in `addons/dot_audio/stock/`, all CC0: footsteps from [Kenney](https://www.kenney.nl)'s Impact Sounds, and nine ambience beds synthesised by `tools/make_ambience.py` (credits in `stock/CREDITS.md`). `DotAudioStock.add_to(catalogue)` adds them as ordinary defs, and a game's own def with the same id wins. The reasoning is in [docs/loudness.md](docs/loudness.md).
 
+## A creepy-ambience layer
+
+`DotAmbience` plays a mood: looping beds plus sparse random one-shots from a random direction, crossfaded when the mood changes, quiet by default, with pause/duck/hush holders and live settings (`DotAmbienceConfig`: on/off, volume, one-shot frequency, mood override, allowed moods, a directory of the owner's own sounds). The addon ships no sounds for it; a game ships a `moods.json` set. [docs/ambience.md](docs/ambience.md)
+
 ## Using it
 
 ```gdscript

@@ -12,8 +12,8 @@ extends Node
 ## godot --headless --path . res://examples/audio_selftest.tscn
 ## [/codeblock]
 
-const SECTIONS := 14
-const CHECKS := 154
+const SECTIONS := 15
+const CHECKS := 195
 
 var _passed := 0
 var _failed := 0
@@ -44,6 +44,7 @@ func _run() -> void:
 	_test_stock()
 	_test_footsteps()
 	_test_ambience_and_loudness()
+	_test_creepy_ambience()
 	_test_raw_fallback()
 	_test_nothing_kept_alive_at_exit()
 
@@ -1011,6 +1012,198 @@ func _test_ambience_and_loudness() -> void:
 
 	amb.queue_free()
 	m.queue_free()
+
+
+func _write_wav(path: String) -> void:
+	var w := AudioStreamWAV.new()
+	w.format = AudioStreamWAV.FORMAT_16_BITS
+	w.mix_rate = 8000
+	var bytes := PackedByteArray()
+	bytes.resize(1600)
+	for i in 800:
+		bytes.encode_s16(i * 2, int(sin(i * 0.2) * 8000.0))
+	w.data = bytes
+	w.save_to_wav(path)
+
+
+## [b]The creepy-ambience layer[/b]: moods read from a directory, crossfaded, one-shots on a
+## schedule, and the settings (off, volume, frequency, override, allowed list) all live.
+func _test_creepy_ambience() -> void:
+	_section("Creepy ambience: moods, one-shots, settings")
+	var dir := "user://amb_selftest"
+	DirAccess.make_dir_recursive_absolute(dir)
+	for f in ["a_bed.wav", "a_shot1.wav", "a_shot2.wav", "b_bed.wav", "b_shot.wav"]:
+		_write_wav(dir.path_join(f))
+	var doc := {"format": 1, "moods": {
+		"alpha": {"volume": 1.0, "beds": [{"file": "a_bed.wav", "volume": 0.8}],
+			"oneshots": [{"files": ["a_shot1.wav", "a_shot2.wav", "gone.wav"], "interval": [10, 20], "volume": 0.5, "distance": [5, 20]}]},
+		"beta": {"beds": [{"file": "b_bed.wav"}, {"file": "missing.wav"}],
+			"oneshots": [{"file": "b_shot.wav", "interval": [30, 40]}]},
+		"empty": {"beds": [{"file": "nothing.wav"}]},
+	}}
+	var f := FileAccess.open(dir.path_join("moods.json"), FileAccess.WRITE)
+	f.store_string(JSON.stringify(doc))
+	f.close()
+
+	var loaded := DotAmbienceSet.load_dir(dir)
+	var set: DotAmbienceSet = loaded.value if loaded.ok else null
+	_check(loaded.ok and set != null and set.names() == PackedStringArray(["alpha", "beta"]), "a set reads its moods and drops the one with no file")
+	_check(set != null and set.dropped.size() == 3, "and names the files it lacked (%d)" % (set.dropped.size() if set != null else -1))
+	_check(set != null and (set.moods[&"alpha"] as DotAmbienceMood).oneshots[0]["files"].size() == 2, "a one-shot keeps the files that exist")
+	_check(not DotAmbienceSet.load_dir("user://amb_nowhere").ok, "a directory that is not there is a DotResult failure, not a crash")
+	DirAccess.make_dir_recursive_absolute("user://amb_selftest_bad")
+	var badf := FileAccess.open("user://amb_selftest_bad/moods.json", FileAccess.WRITE)
+	badf.store_string("[1,2")
+	badf.close()
+	var bad_res := DotAmbienceSet.load_dir("user://amb_selftest_bad")
+	_check(not bad_res.ok and bad_res.error.code == DotError.CODE_PARSE, "a malformed document is a parse failure")
+
+	DirAccess.make_dir_recursive_absolute(dir.path_join("folk"))
+	_write_wav(dir.path_join("folk/bed_low.wav"))
+	_write_wav(dir.path_join("folk/knock.wav"))
+	DirAccess.remove_absolute(dir.path_join("moods.json"))
+	var folk := DotAmbienceSet.load_dir(dir)
+	var fm: DotAmbienceMood = folk.value.moods.get(&"folk") if folk.ok else null
+	_check(fm != null and fm.beds.size() == 1 and fm.oneshots.size() == 1, "with no document a folder is a mood: bed* is a bed, the rest one-shots")
+	var jf := FileAccess.open(dir.path_join("moods.json"), FileAccess.WRITE)
+	jf.store_string(JSON.stringify(doc))
+	jf.close()
+
+	var cat := DotAudioCatalogue.new()
+	var m := _manager(cat, 16)
+	var sink := m.sink as DotAudioSinkNull
+	var amb := DotAmbience.new()
+	amb.manager = m
+	amb.seed_random(7)
+	amb.config.crossfade_seconds = 2.0
+	add_child(amb)
+	amb.set_process(false)
+	_check(amb.add_set_dir(dir).ok and amb.mood_names() == PackedStringArray(["alpha", "beta"]), "a set joins the layer")
+	_check(not amb.set_mood(&"nope").ok and amb.mood() == &"", "an unknown mood is refused and nothing plays")
+
+	m.listener_position = Vector3(100, 0, 100)
+	var heard := []
+	amb.oneshot_played.connect(func(mood_id: StringName, file: String, pos: Vector3) -> void: heard.append([mood_id, file, pos]))
+	_check(amb.set_mood(&"alpha").ok and amb.mood() == &"alpha", "a mood is chosen")
+	amb.advance(0.1)
+	_check(amb.describe()["beds"] == 1 and sink.count_of(&"ambience/alpha/bed0") == 1, "its bed starts")
+	var first: int = int(amb.describe()["beds"])
+	for i in 20:
+		amb.advance(1.0)
+	var db := -99.0
+	for h: int in amb._voices.keys():
+		db = float(m.voice(h).get("volume_db", 0.0))
+	_check(is_equal_approx(db, linear_to_db(0.8)) and amb.target_level() == 0.5, "the default level is nominal for the file, which is a quiet bed (%.1f dB re file)" % db)
+
+	for i in 12:
+		amb.advance(5.0)
+		m.stop_id(&"ambience/alpha/shot0")
+	_check(heard.size() >= 2 and heard.size() <= 8, "one-shots are sparse: %d in 80 s at 10 to 20 s" % heard.size())
+	var spread := true
+	for h in heard:
+		var d: float = (h[2] as Vector3).distance_to(Vector3(100, 0, 100))
+		spread = spread and d >= 5.0 - 0.01 and d <= 20.0 + 0.01
+	_check(spread, "each from 5 to 20 m of the listener")
+	var dirs := {}
+	for h in heard:
+		dirs[snappedf(((h[2] as Vector3) - Vector3(100, 0, 100)).normalized().x, 0.1)] = true
+	_check(dirs.size() >= 2, "and not always from the same direction")
+
+	amb.config.frequency = 0.0
+	var n := heard.size()
+	for i in 20:
+		amb.advance(10.0)
+	_check(heard.size() == n, "frequency 0 turns the one-shots off")
+	amb.config.frequency = 4.0
+	for i in 20:
+		amb.advance(5.0)
+		m.stop_id(&"ambience/alpha/shot0")
+	var fast := heard.size() - n
+	_check(fast >= 10, "frequency 4 quadruples them (%d in 100 s)" % fast)
+	amb.config.frequency = 1.0
+
+	_check(amb.set_mood(&"beta").ok and amb.mood() == &"beta", "the mood changes")
+	amb.advance(0.5)
+	_check(sink.count_of(&"ambience/beta/bed0") == 1 and amb.describe()["beds"] == 2, "the new bed starts while the old one is still audible (a crossfade)")
+	for i in 5:
+		amb.advance(1.0)
+	_check(amb.describe()["beds"] == 1, "then the old bed is stopped (%s beds)" % str(amb.describe()["beds"]))
+	_check(first == 1, "one bed per mood bed")
+
+	amb.config.mood = "alpha"
+	amb.advance(0.1)
+	_check(amb.mood() == &"alpha", "the override wins over the game's request")
+	amb.config.mood = "ghost"
+	amb.advance(0.1)
+	_check(amb.mood() == &"beta", "an override naming no mood is ignored")
+	amb.config.mood = ""
+	amb.config.allowed_moods = "alpha"
+	amb.advance(0.1)
+	_check(amb.mood() == &"alpha", "a mood outside the allowed list gives way to one in it")
+	amb.config.allowed_moods = "alpha, beta"
+	amb.advance(0.1)
+	_check(amb.mood() == &"beta", "and returns once allowed")
+	amb.config.allowed_moods = ""
+
+	amb.duck(&"fight", 0.3)
+	amb.duck(&"other", 0.6)
+	_check(is_equal_approx(amb.target_level(), 0.5 * 0.3), "ducking takes the lowest scale")
+	var count := heard.size()
+	for i in 30:
+		amb.advance(5.0)
+	_check(heard.size() == count, "a ducked layer plays no one-shots")
+	amb.unduck(&"fight")
+	_check(is_equal_approx(amb.target_level(), 0.5 * 0.6), "holders release one at a time")
+	amb.unduck(&"other")
+	amb.hush(&"talk")
+	for i in 30:
+		amb.advance(5.0)
+	_check(heard.size() == count and amb.target_level() == 0.5, "hush stops one-shots but not beds")
+	amb.unhush(&"talk")
+	amb.pause(&"menu")
+	_check(amb.target_level() == 0.0, "pause takes the level to nothing")
+	for i in 60:
+		amb.advance(1.0)
+	_check(is_equal_approx(amb._level, 0.0) and heard.size() == count, "and it fades there without one-shots")
+	amb.resume(&"menu")
+	for i in 80:
+		amb.advance(1.0)
+	_check(is_equal_approx(amb._level, 0.5), "resume brings it back")
+
+	amb.config.enabled = false
+	for i in 80:
+		amb.advance(1.0)
+	_check(is_equal_approx(amb._level, 0.0) and amb.describe()["enabled"] == false, "ambient off silences the layer")
+	amb.config.enabled = true
+	amb.config.volume = 0.25
+	for i in 80:
+		amb.advance(1.0)
+	_check(is_equal_approx(amb._level, 0.25), "volume is live")
+
+	var d := amb.describe()
+	_check(d["mood"] == "beta" and d["beds"] >= 1 and d.has("next_oneshot_in") and d["oneshots_played"] > 0, "describe() says what is playing and what is next")
+	_check(amb.describe_lines()[0].contains("beta"), "and describe_lines() reads it")
+
+	var cfg := DotAmbienceConfig.new()
+	var applied := cfg.apply_dictionary({"enabled": false, "volume": 0.2, "frequency": 2.0, "mood": "swamp", "allowed_moods": "swamp,cave_tunnel", "sound_dir": "/x"})
+	_check(not cfg.enabled and is_equal_approx(cfg.volume, 0.2) and cfg.allowed() == PackedStringArray(["swamp", "cave_tunnel"]) and cfg.sound_dir == "/x", "the config is a DotConfig: a dictionary layer sets every field (%s)" % str(applied))
+	_check(cfg.env_prefix() == "DOT_AMBIENCE_" and cfg.cli_prefix() == "--ambience-", "with its own environment and command-line prefixes")
+
+	_check(DotAmbienceMoods.vote(["d1_town.Street", "canals_slime_outside", "storm_rain"]) == DotAmbienceMoods.CITY_RUINS, "soundscape names vote for a mood")
+	_check(DotAmbienceMoods.vote(["prison.general_dripping_tunnel", "coast.util_windgusts"]) == DotAmbienceMoods.INTERIOR_HORROR, "the first table row breaks a tie")
+	_check(DotAmbienceMoods.vote(["xyzzy"], &"indoor_hall") == &"indoor_hall", "and a name that matches nothing gives the fallback")
+	_check(DotAmbienceMoods.vote(DotAmbienceMoods.names_in({"soundscapes": [{"soundscape": "bedroom_rain"}], "ambient": [{"message": "ambient/wind/windgust.wav", "stand_in": "wind"}]})) != &"", "a map's sounds block is read for names")
+
+	amb.queue_free()
+	m.queue_free()
+	for fn in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir.path_join(fn))
+	DirAccess.remove_absolute(dir.path_join("folk/bed_low.wav"))
+	DirAccess.remove_absolute(dir.path_join("folk/knock.wav"))
+	DirAccess.remove_absolute(dir.path_join("folk"))
+	DirAccess.remove_absolute(dir)
+	DirAccess.remove_absolute("user://amb_selftest_bad/moods.json")
+	DirAccess.remove_absolute("user://amb_selftest_bad")
 
 
 # --- 13 ---------------------------------------------------------------------

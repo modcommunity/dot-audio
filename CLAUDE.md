@@ -12,6 +12,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | --- | --- |
 | [docs/design.md](docs/design.md) | anything: the sink seam, the pieces, paths not streams, culling, stealing, ducking, variation, silence on failure, looping, reaping, the synthesiser, what is not here |
 | [docs/loudness.md](docs/loudness.md) | footsteps, ambience, a level, the limiter, or measuring a game: the standard and why, the capture tool, the stock set |
+| [docs/ambience.md](docs/ambience.md) | the creepy-ambience layer: moods, sound-set format, settings, map to mood |
 | [docs/history.md](docs/history.md) | touching reaping, looping or the suite's frame waits: the pause-menu silence, the unread `looping` |
 
 ## Layout
@@ -27,6 +28,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `core/dot_audio_loudness.gd` | `DotAudioLoudness`: the standard's numbers, `install_limiter` |
 | `runtime/dot_audio_footsteps.gd` | `DotAudioFootsteps`: steps by distance and surface for any number of bodies; `stepped` |
 | `runtime/dot_audio_ambience.gd` | `DotAudioAmbience`: a bed per map, zones by box, equal-power crossfades |
+| `runtime/dot_ambience.gd` | `DotAmbience`: moods (looping beds plus sparse random one-shots), crossfade on a change, `pause`/`duck`/`hush` holders, `describe()`; `core/dot_ambience_{config,set,mood,moods}.gd` are its settings, sound-set reader and map-to-mood table |
 | `stock/` | CC0 footsteps (Kenney) and generated beds; `CREDITS.md` |
 | `web/dot_audio_ceiling.js` | the browser's limiter, loaded by a page before the engine |
 | `tools/loudness.sh`, `tools/dot_audio_capture.gd` | record a game under xvfb and measure it; run from a game's root; a game's `tools/loudness_pilot.gd` drives its player |
@@ -68,5 +70,7 @@ A green run prints "3 ObjectDB instances were leaked at exit": `--verbose` names
 - A sound path resolves through `DotAudioSinkGodot.stream_at` (the import, else the file's own bytes when an addon pack brought no imported output); never `load()` a def's path directly. [loudness](docs/loudness.md#the-stock-set)
 - A footstep is distance on the ground, silent under `quiet_speed`; a surface comes from the collider (`surface` meta, `surface_<name>` group, node name) else the map's `default_surface`. [loudness](docs/loudness.md#footsteps-dotaudiofootsteps)
 - Every map sets a bed (`set_map_bed`); nothing may be digital silence. Beds are −24 LUFS; regenerate with `tools/make_ambience.py`, never edit an `.ogg` by hand. [loudness](docs/loudness.md#the-stock-set)
+
+- `DotAmbience` is stepped by `advance(delta)`; `_process` only calls it. Its content is a sound set (`moods.json`) a game ships and a server owner may add to (`sound_dir`); the addon ships none. [ambience](docs/ambience.md)
 
 Deliberately not here: game audio beyond the stock set, DSP, per-voice fades (`_ramp` is the subclass point), a stem player, voice chat. [design](docs/design.md#deliberately-not-here)

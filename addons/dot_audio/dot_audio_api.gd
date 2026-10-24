@@ -13,5 +13,7 @@ extends RefCounted
 #    DotAudioLoudness and the manager's master limiter (limit_master, loudness_trim_db).
 # 4: DotAudioSinkGodot.stream_at (a file with no imported output, as an addon pack brings
 #    it, is decoded from its own bytes).
-const LEVEL := 4
+# 5: DotAmbience (moods of beds and random one-shots, crossfaded), DotAmbienceConfig,
+#    DotAmbienceSet, DotAmbienceMood, DotAmbienceMoods.
+const LEVEL := 5
 const OLDEST := 1

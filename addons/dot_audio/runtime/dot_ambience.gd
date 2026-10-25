@@ -242,10 +242,11 @@ func _start_mood(id: StringName, retry: bool = false) -> void:
 		return
 	_register(id)
 	var m: DotAmbienceMood = _moods[id]
+	m.assign_ids(ID_PREFIX, id)
 	var fade := config.crossfade_seconds
 	var i := 0
 	for bed: Dictionary in m.beds:
-		var def_id := StringName("%s%s/bed%d" % [ID_PREFIX, id, i])
+		var def_id := m.bed_ids[i]
 		i += 1
 		if _has_live_voice(def_id):
 			continue
@@ -274,11 +275,12 @@ func _register(id: StringName) -> void:
 		return
 	_registered[id] = true
 	var m: DotAmbienceMood = _moods[id]
+	m.assign_ids(ID_PREFIX, id)
 	var cat := manager.catalogue
 	var i := 0
 	for bed: Dictionary in m.beds:
 		var d := DotAudioDef.new()
-		d.id = StringName("%s%s/bed%d" % [ID_PREFIX, id, i])
+		d.id = m.bed_ids[i]
 		d.path = bed["file"]
 		d.kind = DotAudioDef.Kind.FLAT
 		d.bus = bus
@@ -292,7 +294,7 @@ func _register(id: StringName) -> void:
 	i = 0
 	for shot: Dictionary in m.oneshots:
 		var d := DotAudioDef.new()
-		d.id = StringName("%s%s/shot%d" % [ID_PREFIX, id, i])
+		d.id = m.shot_ids[i]
 		d.path = (shot["files"] as PackedStringArray)[0]
 		d.variants = shot["files"]
 		d.kind = DotAudioDef.Kind.POSITIONAL_3D
@@ -337,7 +339,7 @@ func _play_shot(m: DotAmbienceMood, index: int, shot: Dictionary) -> void:
 	var dist := _rng.randf_range(float(shot["min_distance"]), float(shot["max_distance"]))
 	var pos := at + Vector3(cos(angle), 0.0, sin(angle)) * dist
 	var vol := float(shot["volume"]) * m.volume * maxf(_level, 0.0) * 2.0
-	var h := manager.play_at(StringName("%s%s/shot%d" % [ID_PREFIX, m.name, index]), pos, vol,
+	var h := manager.play_at(m.shot_ids[index], pos, vol,
 		_rng.randf_range(float(shot["min_pitch"]), float(shot["max_pitch"])))
 	if h == 0:
 		return

@@ -12,6 +12,10 @@ var name: StringName = &""
 var volume: float = 1.0
 var beds: Array[Dictionary] = []
 var oneshots: Array[Dictionary] = []
+## Catalogue ids of the beds and one-shots, built once by [method assign_ids] so playing never formats a string.
+var bed_ids: Array[StringName] = []
+var shot_ids: Array[StringName] = []
+var _ids_key := ""
 
 
 ## A mood from its JSON form; [param base] is prepended to every relative file. Entries whose
@@ -90,6 +94,20 @@ func with_oneshots_of(other: DotAmbienceMood, new_name: StringName) -> DotAmbien
 	m.oneshots = oneshots.duplicate()
 	m.oneshots.append_array(other.oneshots)
 	return m
+
+
+## Names the beds and one-shots [code]prefix + mood/bedN[/code]; a repeat call with the same arguments does nothing.
+func assign_ids(prefix: String, mood_id: StringName) -> void:
+	var key := prefix + String(mood_id)
+	if key == _ids_key:
+		return
+	_ids_key = key
+	bed_ids.clear()
+	shot_ids.clear()
+	for i in beds.size():
+		bed_ids.append(StringName("%s/bed%d" % [key, i]))
+	for i in oneshots.size():
+		shot_ids.append(StringName("%s/shot%d" % [key, i]))
 
 
 func is_empty() -> bool:

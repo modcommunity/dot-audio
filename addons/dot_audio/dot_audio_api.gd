@@ -15,5 +15,6 @@ extends RefCounted
 #    it, is decoded from its own bytes).
 # 5: DotAmbience (moods of beds and random one-shots, crossfaded), DotAmbienceConfig,
 #    DotAmbienceSet, DotAmbienceMood, DotAmbienceMoods.
-const LEVEL := 5
+# 6: DotAmbienceDirector, DotAmbienceRules, DotAudioStock.moods_directory (the stock mood set).
+const LEVEL := 6
 const OLDEST := 1

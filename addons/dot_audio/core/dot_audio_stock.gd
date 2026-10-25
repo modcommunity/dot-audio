@@ -55,6 +55,11 @@ static func directory() -> String:
 	return here.get_base_dir().get_base_dir().path_join("stock")
 
 
+## The stock mood set for [DotAmbience] (`moods.json` and its files, CC0, `moods/CREDITS.md`).
+static func moods_directory() -> String:
+	return directory().path_join("moods")
+
+
 ## A surface name from anything: a canonical one, an alias, or a longer name containing one
 ## ("Floor_Wood_02", "snowbank"). Empty when nothing matches.
 static func surface_of(name: String) -> StringName:

@@ -12,8 +12,8 @@ extends Node
 ## godot --headless --path . res://examples/audio_selftest.tscn
 ## [/codeblock]
 
-const SECTIONS := 15
-const CHECKS := 204
+const SECTIONS := 16
+const CHECKS := 217
 
 var _passed := 0
 var _failed := 0
@@ -45,6 +45,7 @@ func _run() -> void:
 	_test_footsteps()
 	_test_ambience_and_loudness()
 	_test_creepy_ambience()
+	_test_ambience_director()
 	_test_raw_fallback()
 	_test_nothing_kept_alive_at_exit()
 
@@ -1289,6 +1290,61 @@ func _test_raw_fallback() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(marker))
 	DotAudioSinkGodot.clear_streams()
 	_check(DotAudioSinkGodot._RAW.streams.is_empty(), "clear_streams() drops the cache so a process can exit with no stream in use")
+
+
+## [b]The glue a game used to write itself.[/b] The stock set loads, a map picks its mood by document,
+## table, prefix and name vote, the rules and the player's sliders multiply, and a player's mute wins.
+func _test_ambience_director() -> void:
+	_section("Ambience director: stock moods, map to mood, settings")
+	var m := _manager(DotAudioCatalogue.new(), 16)
+	var d := DotAmbienceDirector.new()
+	d.manager = m
+	d.default_mood = &"industrial"
+	d.prefix_moods = {"surf_": &"snow_wind"}
+	d.map_moods = {&"hall_a": &"indoor_hall"}
+	add_child(d)
+	var made := d.setup()
+	d.ambient.set_process(false)
+	_check(made.ok and d.has_moods() and d.ambient.mood_names().size() == 8, "the stock set loads all eight moods")
+	_check(DotAudioStock.moods_directory().ends_with("stock/moods") and FileAccess.file_exists(DotAudioStock.moods_directory() + "/CREDITS.md"), "the stock set is credited beside its files")
+	d.on_map(&"unknown_1")
+	_check(d.mood_for_map()["mood"] == &"industrial" and d.mood_for_map()["why"] == "default", "an unknown map gets the default")
+	d.on_map(&"surf_ski")
+	_check(d.mood_for_map()["why"] == "name prefix" and d.ambient.effective_mood() == &"snow_wind", "a prefix picks the mood")
+	d.on_map(&"hall_a", {"ambient": {"mood": "swamp", "volume": 9.0}})
+	_check(d.mood_for_map()["mood"] == &"swamp" and d.mood_for_map()["why"] == "map document", "the document's field wins over the tables")
+	_check(is_equal_approx(d.ambient.config.volume, 1.0), "and its volume scale is clamped")
+	d.on_map(&"zz_x", {}, ["spooky_chapel"])
+	_check(d.mood_for_map()["mood"] == &"interior_horror" and d.mood_for_map()["why"] == "sound names", "sound names vote when nothing else decides")
+	d.on_map(&"hall_a")
+	_check(d.mood_for_map()["why"] == "game table", "the game's table names its hand-made maps")
+	_check(d.indoor_mood_for_map() == &"indoor_hall", "an indoor map stays indoors")
+
+	var rules := DotAmbienceRules.new()
+	rules.prefix = "tt"
+	var store := _FakeStore.new()
+	d.follow_settings(store, rules)
+	_check(rules.set_cvar("tt_ambient_volume", "0.4") and is_equal_approx(d.ambient.config.volume, 0.4), "the server's level reaches the layer under the game's own prefix")
+	store.values[&"ambient_volume"] = 0.5
+	store.changed.emit(&"ambient_volume", 0.5, &"set")
+	_check(is_equal_approx(d.ambient.config.volume, 0.2), "a player's slider multiplies and can only turn it down")
+	store.values[&"ambient"] = false
+	store.changed.emit(&"ambient", false, &"set")
+	_check(not d.ambient.config.enabled, "a player's off switch silences the layer")
+	_check(not rules.set_cvar("zz_ambient", "0") and d.describe().has("mood_from"), "another prefix is not this game's cvar; describe says why a mood")
+	d.free()
+	m.free()
+
+
+class _FakeStore extends RefCounted:
+	signal changed(key: StringName, value: Variant, why: StringName)
+	var values := {}
+
+	func get_bool(key: StringName, fallback: bool) -> bool:
+		return bool(values.get(key, fallback))
+
+	func get_float(key: StringName, fallback: float) -> float:
+		return float(values.get(key, fallback))
 
 
 # --- 14 ---------------------------------------------------------------------

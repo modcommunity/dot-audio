@@ -29,6 +29,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `runtime/dot_audio_footsteps.gd` | `DotAudioFootsteps`: steps by distance and surface for any number of bodies; `stepped` |
 | `runtime/dot_audio_ambience.gd` | `DotAudioAmbience`: a bed per map, zones by box, equal-power crossfades |
 | `runtime/dot_ambience.gd` | `DotAmbience`: moods (looping beds plus sparse random one-shots), crossfade on a change, `pause`/`duck`/`hush` holders, `describe()`; `runtime/dot_ambience_roof.gd` (`DotAmbienceRoof`: upward ray with hysteresis; the game feeds `set_indoors`), `core/dot_ambience_{config,set,mood,moods}.gd` are its settings, sound-set reader and map-to-mood table |
+| `runtime/dot_ambience_director.gd`, `core/dot_ambience_rules.gd` | `DotAmbienceDirector`: map to mood, roof, settings and the server's rules, over `stock/moods/` (the shared eight-mood set) |
 | `stock/` | CC0 footsteps (Kenney) and generated beds; `CREDITS.md` |
 | `web/dot_audio_ceiling.js` | the browser's limiter, loaded by a page before the engine |
 | `tools/loudness.sh`, `tools/dot_audio_capture.gd` | record a game under xvfb and measure it; run from a game's root; a game's `tools/loudness_pilot.gd` drives its player |

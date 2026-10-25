@@ -30,3 +30,7 @@ Synthesised by dot-audio's own `tools/make_ambience.py` (in the repository, not 
 | `amb_industrial.ogg` | machinery hum, air, metal settling |
 | `amb_cave.ogg` | deep rumble, dripping water with echoes |
 | `amb_rain.ogg` | steady rain |
+
+## moods/
+
+The ambience mood set (`moods.json`): CC0 recordings from OpenGameArt, converted and normalised. Per-file sources and authors are in `moods/CREDITS.md`.

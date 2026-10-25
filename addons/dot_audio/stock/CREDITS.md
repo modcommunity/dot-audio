@@ -17,12 +17,12 @@ From **Impact Sounds** (1.0) by [Kenney](https://www.kenney.nl), CC0 1.0 ([licen
 
 ## ambience/
 
-Synthesised by dot-audio's own `tools/make_ambience.py` (in the repository, not the addon) from fixed seeds: filtered noise, oscillators and scattered synthesised events, no recordings and no third-party samples. Dedicated to the public domain under CC0 1.0 by the dot-audio authors. Each bed is a 32 s seamless stereo loop normalised to −24 LUFS integrated.
+`amb_wind.ogg` and `amb_outdoor.ogg` are real field recordings; the other seven beds are synthesised by dot-audio's own `tools/make_ambience.py` (in the repository, not the addon) from fixed seeds: filtered noise, oscillators and scattered synthesised events, no recordings and no third-party samples. Dedicated to the public domain under CC0 1.0 by the dot-audio authors. Each bed is a 32 s seamless stereo loop normalised to −24 LUFS integrated.
 
 | File | What it is |
 | --- | --- |
-| `amb_wind.ogg` | gusting wind with a moving whistle |
-| `amb_outdoor.ogg` | daytime breeze, leaves, distant birds |
+| `amb_wind.ogg` | steady open-air wind (recording) |
+| `amb_outdoor.ogg` | daytime birdsong in a park (recording) |
 | `amb_night.ogg` | crickets and a low breeze |
 | `amb_city.ogg` | traffic rumble, passing cars, a far horn |
 | `amb_indoor.ogg` | room tone, ventilation, mains hum |
@@ -30,6 +30,10 @@ Synthesised by dot-audio's own `tools/make_ambience.py` (in the repository, not 
 | `amb_industrial.ogg` | machinery hum, air, metal settling |
 | `amb_cave.ogg` | deep rumble, dripping water with echoes |
 | `amb_rain.ogg` | steady rain |
+
+### Recorded beds
+
+`amb_wind.ogg` and `amb_outdoor.ogg` are cut from the park field recordings `park_ambience_wind.wav` and `park_ambience_birds.wav` by **Thimras**, [OpenGameArt "Park Ambiences"](https://opengameart.org/content/park-ambiences), CC0 1.0. A 36 s excerpt of each, mono, tail crossfaded into the head for a seamless loop, normalised to about -24 LUFS and encoded as Ogg Vorbis by `tools/make_real_beds.sh`.
 
 ## moods/
 

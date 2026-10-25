@@ -60,7 +60,7 @@ Three things every game needs and none should write again:
 - **`DotAudioAmbience`**: a bed per map and zones that swap it (a house, a tunnel), crossfaded, so no game is ever digital silence between events.
 - **A loudness standard**: −17 LUFS integrated and −1 dBTP, a master limiter on by default, and `addons/dot_audio/tools/loudness.sh`, which plays a game under xvfb with a stand-in walking and prints its level.
 
-The stock files are in `addons/dot_audio/stock/`, all CC0: footsteps from [Kenney](https://www.kenney.nl)'s Impact Sounds, and nine ambience beds synthesised by `tools/make_ambience.py` (credits in `stock/CREDITS.md`). `DotAudioStock.add_to(catalogue)` adds them as ordinary defs, and a game's own def with the same id wins. The reasoning is in [docs/loudness.md](docs/loudness.md).
+The stock files are in `addons/dot_audio/stock/`, all CC0: footsteps from [Kenney](https://www.kenney.nl)'s Impact Sounds, and nine ambience beds: wind and birdsong cut from Thimras's CC0 park recordings (`tools/make_real_beds.sh`), the rest synthesised by `tools/make_ambience.py` (credits in `stock/CREDITS.md`). `DotAudioStock.add_to(catalogue)` adds them as ordinary defs, and a game's own def with the same id wins. The reasoning is in [docs/loudness.md](docs/loudness.md).
 
 ## A creepy-ambience layer
 

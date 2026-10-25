@@ -26,6 +26,10 @@ extends DotConfig
 @export_range(0.0, 1.0, 0.01) var voice: float = 1.0
 @export_range(0.0, 1.0, 0.01) var ambience: float = 0.7
 
+## Whether the Ambience bus is `ambience * sfx`, so the Effects slider reaches wind and birds.
+## Off for a game whose Ambience slider must be independent.
+@export var ambience_follows_sfx: bool = true
+
 ## Bus names, in the order the values above are declared.
 ##
 ## Exported so a project with its own bus layout does not have to rename anything, and so
@@ -60,7 +64,7 @@ func cli_prefix() -> String:
 ## Every slider, by bus name.
 func levels() -> Dictionary:
 	var out := {}
-	var values: Array[float] = [master, music, sfx, ui, voice, ambience]
+	var values: Array[float] = [master, music, sfx, ui, voice, ambience * sfx if ambience_follows_sfx else ambience]
 	for i in range(mini(values.size(), bus_names.size())):
 		out[bus_names[i]] = values[i]
 	return out

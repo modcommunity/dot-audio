@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://examples/ambience_bus_selftest.gd" id="1_abs"]
+
+[node name="AmbienceBusSelftest" type="Node"]
+script = ExtResource("1_abs")

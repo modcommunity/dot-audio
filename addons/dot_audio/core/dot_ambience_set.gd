@@ -39,7 +39,7 @@ static func load_dir(dir: String) -> DotResult:
 				set._add(DotAmbienceMood.from_dictionary(id, table[id], dir, set.dropped))
 	elif DirAccess.dir_exists_absolute(dir) or DirAccess.open(dir) != null:
 		if OS.has_feature("template"):
-			DotLog.warn(CHANNEL, "no moods.json in an exported build; the export filter probably drops .json, add it to include_filter", {"dir": dir})
+			DotLog.warn(CHANNEL, "no moods.json in an exported build; check the preset exports .json (all_resources does in 4.7)", {"dir": dir})
 		for sub in DirAccess.get_directories_at(dir):
 			set._add(DotAmbienceMood.from_folder(sub, dir.path_join(sub)))
 	else:

@@ -41,7 +41,7 @@ Defaults < JSON file < environment (`DOT_AMBIENCE_*`) < command line (`--ambienc
                 "volume": 0.5, "pitch": [0.9, 1.1], "distance": [4, 25]}]}}}
 ```
 
-With no `moods.json`, each subfolder is a mood: files named `bed*` or `loop*` are beds, the rest one-shots (30 to 90 s apart, volume 0.6). A file a mood names and the disk lacks is dropped with one WARN; a mood left empty is dropped. Each one-shot has its own timer, is placed on a circle round the listener at a random angle and `distance`, and is played through the manager (pool, cull, null sink all apply). Make beds seamless before shipping (crossfade the end into the start) and match their loudness; a loop that clicks is the first thing a player hears.
+`moods.json` is exported by a preset with `export_filter="all_resources"` (checked with `--export-pack` on 4.7.2: `.json` is packed, `.txt` is not), so no `include_filter` entry is needed. With no `moods.json`, each subfolder is a mood: files named `bed*` or `loop*` are beds, the rest one-shots (30 to 90 s apart, volume 0.6). A file a mood names and the disk lacks is dropped with one WARN; a mood left empty is dropped. Each one-shot has its own timer, is placed on a circle round the listener at a random angle and `distance`, and is played through the manager (pool, cull, null sink all apply). Make beds seamless before shipping (crossfade the end into the start) and match their loudness; a loop that clicks is the first thing a player hears.
 
 ## Map to mood
 

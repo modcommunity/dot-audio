@@ -35,6 +35,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `stock/` | CC0 footsteps (Kenney) and generated beds; `CREDITS.md` |
 | `web/dot_audio_ceiling.js` | the browser's limiter, loaded by a page before the engine |
 | `tools/loudness.sh`, `tools/dot_audio_capture.gd` | record a game under xvfb and measure it; run from a game's root; a game's `tools/loudness_pilot.gd` drives its player |
+| `tools/sound_compare.tscn` | ear-check the `slide_*` loops at several speeds; `-- --levels` (headless) prints each loop's peak/RMS via ffmpeg |
 | `runtime/dot_audio_manager.gd` | `DotAudioManager`: ids in, limits, `listener_position`, `roll_source`, `play_music`, `duck`, `shape`/`voice` a playing handle |
 | `dot_audio_api.gd` | the API level (`DotAddonApi`); bump `LEVEL` for anything a game can newly call |
 | `examples/audio_selftest.tscn` | the suite; needs no sound card |

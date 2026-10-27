@@ -56,3 +56,11 @@ Slices of CC0 recordings, cut, pitched, layered with a synthesised sub-bass thum
 | Sci-fi Sounds 1.0 | Kenney | https://kenney.nl/assets/sci-fi-sounds | `beam_fire`, `charge_fire`, `explosion` layer |
 
 `suppressed_fire` is derived from the stock's own `light_fire` files by `tools/make_suppressed.py` (low-passed, softened, shortened, with a synthesised action clack), so it adds no source.
+
+## slides/
+
+Seven looping slide scrapes (`slide_generic`, `slide_concrete`, `slide_metal`, `slide_wood`, `slide_grass`, `slide_snow`, `slide_carpet`), built by `tools/make_slide_stock.py`: scrapes joined with equal-power crossfades into a seamless loop, filtered per surface and levelled. Source is CC0 1.0; attribution is not required and is given here.
+
+| Source | Author | URL | Used for |
+| --- | --- | --- | --- |
+| Scrapes (scrape-1 to scrape-8) | AntumDeluge | https://opengameart.org/content/scrapes | every `slide_*` loop |

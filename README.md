@@ -57,6 +57,7 @@ And the pool: `DotAudioSinkGodot` creates `voices` players once and never frees 
 Three things every game needs and none should write again:
 
 - **`DotAudioFootsteps`**: footsteps for the player, other players and bots, one per stride of distance travelled (so a body moved by the network steps at the rate it moves), silent when creeping, by the surface underfoot (a collider's `surface` meta, a `surface_wood` group, or a name like `Floor_Wood`).
+- **`DotAudioSlide`**: the looping scrape of a sliding body, by surface (`slide_<surface>`, the generic ground scrape when none), louder and higher with speed, one voice per sliding body, positional; `slide_started` / `slide_stopped` fire once per slide, `enabled` is the server's switch and `volume` the player's slider.
 - **`DotAudioAmbience`**: a bed per map and zones that swap it (a house, a tunnel), crossfaded, so no game is ever digital silence between events.
 - **A loudness standard**: −17 LUFS integrated and −1 dBTP, a master limiter on by default, and `addons/dot_audio/tools/loudness.sh`, which plays a game under xvfb with a stand-in walking and prints its level.
 

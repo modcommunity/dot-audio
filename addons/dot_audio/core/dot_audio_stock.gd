@@ -14,6 +14,7 @@ extends RefCounted
 ## places to fix a level. A game that wants its own defines the same id first and wins.
 
 const FOOTSTEP_PREFIX := "footstep_"
+const SLIDE_PREFIX := "slide_"
 
 ## Canonical surfaces, each with five files.
 const SURFACES: Array[StringName] = [&"concrete", &"wood", &"grass", &"snow", &"carpet", &"metal"]
@@ -86,6 +87,35 @@ static func footstep_id(surface: StringName) -> StringName:
 	return StringName(FOOTSTEP_PREFIX + String(s if s != &"" else &"concrete"))
 
 
+## The slide loop for a surface; anything without its own is the generic ground scrape.
+static func slide_id(surface: StringName) -> StringName:
+	var s := surface_of(String(surface))
+	return StringName(SLIDE_PREFIX + String(s if s != &"" else &"generic"))
+
+
+## One looping def per surface plus `slide_generic` (CC0 scrapes, `stock/CREDITS.md`).
+static func slide_defs() -> Array[DotAudioDef]:
+	var out: Array[DotAudioDef] = []
+	var dir := directory().path_join("slides")
+	var names: Array[StringName] = [&"generic"]
+	names.append_array(SURFACES)
+	for s in names:
+		var d := DotAudioDef.new()
+		d.id = StringName(SLIDE_PREFIX + String(s))
+		d.path = dir.path_join("slide_%s.ogg" % s)
+		d.kind = DotAudioDef.Kind.POSITIONAL_3D
+		d.bus = &"SFX"
+		d.looping = true
+		d.gain_db = 0.0
+		d.priority = 25
+		d.max_concurrent = 6
+		d.unit_size = 3.0
+		d.max_distance = 30.0
+		d.tags = [&"slide"]
+		out.append(d)
+	return out
+
+
 static func footstep_defs() -> Array[DotAudioDef]:
 	var out: Array[DotAudioDef] = []
 	var dir := directory().path_join("footsteps")
@@ -141,6 +171,8 @@ static func ids(weapons: bool = true) -> Array[StringName]:
 	var out: Array[StringName] = []
 	for s in SURFACES:
 		out.append(StringName(FOOTSTEP_PREFIX + String(s)))
+	for d in slide_defs():
+		out.append(d.id)
 	out.append_array(BEDS)
 	if weapons:
 		for sound: StringName in DotAudioWeaponStock.COUNTS:
@@ -153,7 +185,7 @@ static func ids(weapons: bool = true) -> Array[StringName]:
 ## takes the stock has them. Returns how many.
 static func add_to(catalogue: DotAudioCatalogue, weapons: bool = true) -> int:
 	var added := DotAudioWeaponStock.add_to(catalogue) if weapons else 0
-	for d in footstep_defs() + ambience_defs():
+	for d in footstep_defs() + slide_defs() + ambience_defs():
 		if catalogue.has(d.id):
 			continue
 		catalogue.add(d)

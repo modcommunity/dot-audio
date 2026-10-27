@@ -16,5 +16,6 @@ extends RefCounted
 # 5: DotAmbience (moods of beds and random one-shots, crossfaded), DotAmbienceConfig,
 #    DotAmbienceSet, DotAmbienceMood, DotAmbienceMoods.
 # 6: DotAmbienceDirector, DotAmbienceRules, DotAudioStock.moods_directory (the stock mood set).
-const LEVEL := 6
+# 7: DotAudioSlide and the stock slide loops (DotAudioStock.slide_id, slide_defs).
+const LEVEL := 7
 const OLDEST := 1

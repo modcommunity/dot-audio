@@ -12,8 +12,8 @@ extends "selftest/selftest_ambience.gd"
 ## godot --headless --path . res://examples/audio_selftest.tscn
 ## [/codeblock]
 
-const SECTIONS := 16
-const CHECKS := 225
+const SECTIONS := 17
+const CHECKS := 237
 
 func _ready() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
@@ -37,6 +37,7 @@ func _run() -> void:
 	_test_shaping()
 	_test_stock()
 	_test_footsteps()
+	_test_slide()
 	_test_ambience_and_loudness()
 	_test_creepy_ambience()
 	_test_ambience_director()
@@ -757,17 +758,17 @@ func _test_stock() -> void:
 	cat.add(mine)
 	var added := DotAudioStock.add_to(cat)
 	_check(
-		added == DotAudioStock.SURFACES.size() - 1 + DotAudioStock.BEDS.size() + DotAudioWeaponStock.COUNTS.size(),
+		added == DotAudioStock.SURFACES.size() - 1 + DotAudioStock.BEDS.size() + DotAudioStock.slide_defs().size() + DotAudioWeaponStock.COUNTS.size(),
 		"add_to adds every stock id the game has not defined (%d)" % added
 	)
 	_check(cat.find(&"footstep_wood").path == "res://fixtures/silent.wav", "and a game's own id wins")
 	_check(cat.validate().ok, "the stock defs validate")
-	_check(DotAudioStock.ids().all(func(i: StringName) -> bool: return cat.has(i)) and DotAudioStock.ids(false).size() == 15 and DotAudioStock.ids().size() == 15 + DotAudioWeaponStock.COUNTS.size(), "ids() names every one")
+	_check(DotAudioStock.ids().all(func(i: StringName) -> bool: return cat.has(i)) and DotAudioStock.ids(false).size() == 22 and DotAudioStock.ids().size() == 22 + DotAudioWeaponStock.COUNTS.size(), "ids() names every one")
 
 	# The armed half: a def naming a file nobody shipped passes validate() and is silent for
 	# ever. Every path and every variant must exist on disk.
 	var missing := PackedStringArray()
-	for d in DotAudioStock.footstep_defs() + DotAudioStock.ambience_defs():
+	for d in DotAudioStock.footstep_defs() + DotAudioStock.slide_defs() + DotAudioStock.ambience_defs():
 		for p in d.variants if not d.variants.is_empty() else PackedStringArray([d.path]):
 			if not ResourceLoader.exists(p):
 				missing.append(p)
@@ -918,6 +919,71 @@ func _test_footsteps() -> void:
 	m.queue_free()
 
 # --- 12 ---------------------------------------------------------------------
+
+func _test_slide() -> void:
+	_section("A slide scrapes the surface under it, once per slide")
+
+	var cat := DotAudioCatalogue.new()
+	DotAudioStock.add_to(cat)
+	var m := _manager(cat, 32)
+	var sink := m.sink as DotAudioSinkNull
+	var slide := DotAudioSlide.new()
+	slide.manager = m
+	add_child(slide)
+	slide.set_physics_process(false)
+
+	_check(DotAudioStock.slide_id(&"Floor_Wood_02") == &"slide_wood", "a surface word picks its loop")
+	_check(DotAudioStock.slide_id(&"asphalt") == &"slide_concrete", "an alias folds onto one")
+	_check(DotAudioStock.slide_id(&"lava") == &"slide_generic" and DotAudioStock.slide_id(&"") == &"slide_generic", "anything else is the generic ground scrape")
+	_check(DotAudioStock.slide_defs().all(func(d: DotAudioDef) -> bool: return d.looping), "every slide def loops")
+
+	var body := Node3D.new()
+	add_child(body)
+	var on := [false]
+	var started: Array = []
+	var stopped: Array = []
+	slide.slide_started.connect(func(_b: Node3D, s: StringName) -> void: started.append(s))
+	slide.slide_stopped.connect(func(_b: Node3D) -> void: stopped.append(true))
+	slide.track(body, func() -> bool: return on[0], {"surface": &"metal"})
+
+	for i in 30:
+		body.global_position += Vector3(8.0 / 60.0, 0, 0)
+		slide.advance(body, 1.0 / 60.0)
+	_check(started.is_empty() and sink.count_of(&"slide_metal") == 0, "walking without a slide is silent")
+
+	on[0] = true
+	for i in 90:
+		body.global_position += Vector3(8.0 / 60.0, 0, 0)
+		slide.advance(body, 1.0 / 60.0)
+	_check(started.size() == 1 and started[0] == &"metal", "start fires once, with the surface")
+	_check(sink.count_of(&"slide_metal") == 1, "and one loop plays on it, not one a frame")
+
+	for i in 90:
+		body.global_position += Vector3(2.0 / 60.0, 0, 0)
+		slide.advance(body, 1.0 / 60.0)
+	_check(sink.count_of(&"slide_metal") == 1, "slowing down shapes the same loop")
+
+	on[0] = false
+	slide.advance(body, 1.0 / 60.0)
+	slide.advance(body, 1.0 / 60.0)
+	_check(stopped.size() == 1 and not slide.is_sliding(body), "stop fires once when the slide ends")
+
+	slide.enabled = false
+	on[0] = true
+	for i in 10:
+		body.global_position += Vector3(8.0 / 60.0, 0, 0)
+		slide.advance(body, 1.0 / 60.0)
+	_check(started.size() == 1, "the server's switch silences it")
+	slide.enabled = true
+	slide.untrack(body)
+	slide.track(body, func() -> bool: return true)
+	for i in 5:
+		body.global_position += Vector3(8.0 / 60.0, 0, 0)
+		slide.advance(body, 1.0 / 60.0)
+	_check(started.size() == 2 and started[1] == &"", "no surface named plays the generic loop")
+	_check(sink.count_of(&"slide_generic") == 1, "slide_generic is the one that played")
+	slide.untrack(body)
+
 
 func _test_raw_fallback() -> void:
 	_section("An addon pack's sound with no imported output still plays")

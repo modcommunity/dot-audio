@@ -16,6 +16,9 @@ extends RefCounted
 const FOOTSTEP_PREFIX := "footstep_"
 const SLIDE_PREFIX := "slide_"
 
+## The flashlight's switch click pair (`stock/flashlight/`).
+const FLASHLIGHT_IDS: Array[StringName] = [&"flashlight_on", &"flashlight_off"]
+
 ## Canonical surfaces, each with five files.
 const SURFACES: Array[StringName] = [&"concrete", &"wood", &"grass", &"snow", &"carpet", &"metal"]
 
@@ -145,6 +148,29 @@ static func footstep_defs() -> Array[DotAudioDef]:
 	return out
 
 
+## The flashlight's switch clicks: 3D at the player, quieter than a footstep so a
+## neighbour hears them and a room away does not.
+static func flashlight_defs() -> Array[DotAudioDef]:
+	var out: Array[DotAudioDef] = []
+	var dir := directory().path_join("flashlight")
+	for s: StringName in FLASHLIGHT_IDS:
+		var d := DotAudioDef.new()
+		d.id = s
+		d.path = dir.path_join(String(s) + ".ogg")
+		d.kind = DotAudioDef.Kind.POSITIONAL_3D
+		d.bus = &"SFX"
+		d.gain_db = -9.0
+		d.pitch_min = 0.96
+		d.pitch_max = 1.04
+		d.priority = 20
+		d.max_concurrent = 4
+		d.unit_size = 2.0
+		d.max_distance = 18.0
+		d.tags = [&"flashlight"]
+		out.append(d)
+	return out
+
+
 static func ambience_defs() -> Array[DotAudioDef]:
 	var out: Array[DotAudioDef] = []
 	var dir := directory().path_join("ambience")
@@ -174,6 +200,7 @@ static func ids(weapons: bool = true) -> Array[StringName]:
 	for d in slide_defs():
 		out.append(d.id)
 	out.append_array(BEDS)
+	out.append_array(FLASHLIGHT_IDS)
 	if weapons:
 		for sound: StringName in DotAudioWeaponStock.COUNTS:
 			out.append(DotAudioWeaponStock.id_of(sound))
@@ -185,7 +212,7 @@ static func ids(weapons: bool = true) -> Array[StringName]:
 ## takes the stock has them. Returns how many.
 static func add_to(catalogue: DotAudioCatalogue, weapons: bool = true) -> int:
 	var added := DotAudioWeaponStock.add_to(catalogue) if weapons else 0
-	for d in footstep_defs() + slide_defs() + ambience_defs():
+	for d in footstep_defs() + slide_defs() + ambience_defs() + flashlight_defs():
 		if catalogue.has(d.id):
 			continue
 		catalogue.add(d)

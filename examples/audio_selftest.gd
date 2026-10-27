@@ -13,7 +13,7 @@ extends "selftest/selftest_ambience.gd"
 ## [/codeblock]
 
 const SECTIONS := 17
-const CHECKS := 241
+const CHECKS := 242
 
 func _ready() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
@@ -758,21 +758,24 @@ func _test_stock() -> void:
 	cat.add(mine)
 	var added := DotAudioStock.add_to(cat)
 	_check(
-		added == DotAudioStock.SURFACES.size() - 1 + DotAudioStock.BEDS.size() + DotAudioStock.slide_defs().size() + DotAudioWeaponStock.COUNTS.size(),
+		added == DotAudioStock.SURFACES.size() - 1 + DotAudioStock.BEDS.size() + DotAudioStock.slide_defs().size() + DotAudioStock.FLASHLIGHT_IDS.size() + DotAudioWeaponStock.COUNTS.size(),
 		"add_to adds every stock id the game has not defined (%d)" % added
 	)
 	_check(cat.find(&"footstep_wood").path == "res://fixtures/silent.wav", "and a game's own id wins")
 	_check(cat.validate().ok, "the stock defs validate")
-	_check(DotAudioStock.ids().all(func(i: StringName) -> bool: return cat.has(i)) and DotAudioStock.ids(false).size() == 22 and DotAudioStock.ids().size() == 22 + DotAudioWeaponStock.COUNTS.size(), "ids() names every one")
+	_check(DotAudioStock.ids().all(func(i: StringName) -> bool: return cat.has(i)) and DotAudioStock.ids(false).size() == 24 and DotAudioStock.ids().size() == 24 + DotAudioWeaponStock.COUNTS.size(), "ids() names every one")
 
 	# The armed half: a def naming a file nobody shipped passes validate() and is silent for
 	# ever. Every path and every variant must exist on disk.
 	var missing := PackedStringArray()
-	for d in DotAudioStock.footstep_defs() + DotAudioStock.slide_defs() + DotAudioStock.ambience_defs():
+	for d in DotAudioStock.footstep_defs() + DotAudioStock.slide_defs() + DotAudioStock.ambience_defs() + DotAudioStock.flashlight_defs():
 		for p in d.variants if not d.variants.is_empty() else PackedStringArray([d.path]):
 			if not ResourceLoader.exists(p):
 				missing.append(p)
 	_check(missing.is_empty(), "every stock file is there (%s)" % ", ".join(missing))
+
+	var fl_on := load(DotAudioStock.flashlight_defs()[0].path) as AudioStream
+	_check(fl_on != null and fl_on.get_length() < 0.3 and cat.find(&"flashlight_off").gain_db < cat.find(&"footstep_concrete").gain_db, "the flashlight clicks are short and quieter than a footstep")
 
 	var bed := load(DotAudioStock.ambience_defs()[0].path) as AudioStream
 	_check(bed != null and bed.get_length() > 20.0, "a bed loads and is a long loop, not a one-shot")

@@ -64,3 +64,7 @@ Seven looping slide scrapes (`slide_generic`, `slide_concrete`, `slide_metal`, `
 | Source | Author | URL | Used for |
 | --- | --- | --- | --- |
 | Scrapes (scrape-1 to scrape-8) | AntumDeluge | https://opengameart.org/content/scrapes | every `slide_*` loop |
+
+## flashlight/
+
+`flashlight_on.ogg` and `flashlight_off.ogg` are synthesised by `tools/make_flashlight_stock.py` (in the repository, not the addon) from fixed seeds: filtered noise bursts and damped resonances, no recordings and no third-party samples. Dedicated to the public domain under CC0 1.0 by the dot-audio authors.

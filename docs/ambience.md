@@ -57,7 +57,7 @@ A game adopts the layer in a few lines: the stock set (`stock/moods/`, eight moo
 
 ## Birds and a louder bed belong to the map
 
-By default no map plays the birdsong bed (`amb_outdoor` plays as `amb_wind`) and the bed layer sits at `DotAudioAmbience.level` 0.35. A map document asks for more: `"ambient": {"mood": "swamp", "lively": true, "level": 1.5}` (forest, swamp, park), while a city or interior writes `"ambient": {"mood": "city_ruins"}` and stays quiet. Give the director its `beds` node and it forwards `level` and `lively` on every `on_map`; without the director call `set_map_profile` or `set_map_bed(id, level, lively)`.
+By default no map plays the birdsong bed (`amb_outdoor` plays as `amb_wind`) and the bed layer sits at `DotAudioAmbience.level` 0.35. A map document asks for more: `"ambient": {"mood": "swamp", "lively": true, "level": 1.5}` (forest, swamp, park), while a city or interior writes `"ambient": {"mood": "city_ruins"}` and stays quiet. A bed that follows gameplay (wind with speed, a foot-bed off the wheel) sets `DotAudioAmbience.drive` (0 to 16, default 1, a multiplier on `level` x the profile, safe every frame), never `level`; a game then expresses its old absolute level as `drive = old / DotAudioAmbience.DEFAULT_LEVEL`. Give the director its `beds` node and it forwards `level` and `lively` on every `on_map`; without the director call `set_map_profile` or `set_map_bed(id, level, lively)`.
 
 ## Measuring the ambience bus headless
 

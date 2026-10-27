@@ -26,6 +26,12 @@ func _test_ambience_and_loudness() -> void:
 	_check(amb.current_bed() == &"amb_wind", "and a map without the profile loses them again")
 	amb.set_map_bed(&"amb_outdoor", 2.0, true)
 	_check(amb.current_bed() == &"amb_outdoor" and is_equal_approx(amb._gain(), amb.level * 2.0), "set_map_bed can carry the profile itself")
+	_check(is_equal_approx(amb.drive, 1.0) and is_equal_approx(amb.level, DotAudioAmbience.DEFAULT_LEVEL), "drive defaults to 1 and level to 0.35, so loudness is unchanged")
+	amb.drive = 2.0
+	_check(is_equal_approx(amb._gain(), amb.level * 2.0 * 2.0), "drive multiplies the profile gain")
+	amb.drive = 99.0
+	_check(is_equal_approx(amb.drive, DotAudioAmbience.MAX_DRIVE), "drive is clamped")
+	amb.drive = 1.0
 	amb.set_map_bed(&"amb_night")
 	_check(amb.current_bed() == &"amb_night" and sink.count_of(&"amb_night") == 1, "a map's own bed plays")
 	amb.add_zone(AABB(Vector3(0, 0, 0), Vector3(10, 5, 10)), &"amb_indoor")

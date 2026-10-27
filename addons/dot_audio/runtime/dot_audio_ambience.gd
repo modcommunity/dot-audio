@@ -23,6 +23,8 @@ extends Node
 ## server never needs. The highest [param priority] containing the listener wins.
 
 const CHANNEL := "audio.ambience"
+const DEFAULT_LEVEL := 0.35
+const MAX_DRIVE := 16.0
 
 signal bed_changed(from_id: StringName, to_id: StringName)
 
@@ -36,7 +38,14 @@ var fallback_bed: StringName = &"amb_wind"
 
 ## A linear scale on every bed. Low by default: a bed is felt, never listened to. A map that
 ## wants more says so through [method set_map_bed]'s `map_level`.
-var level: float = 0.35
+var level: float = DEFAULT_LEVEL
+
+## A live multiplier on [member level] and the map's profile, safe to set every frame (the next
+## frame's shape picks it up). Gameplay-driven beds (wind with speed) set this, never [member level],
+## so the per-map profile stays the one place a bed's loudness is chosen. 1.0 is no change.
+var drive: float = 1.0:
+	set(v):
+		drive = clampf(v, 0.0, MAX_DRIVE)
 
 ## The birdsong bed. Constant birds are what players found annoying, so [constant BIRD_BED] plays
 ## as [constant CALM_BED] unless this is on or the map asks for it ([method set_map_bed] `lively`).
@@ -128,7 +137,7 @@ func bed_at(point: Vector3) -> StringName:
 
 
 func _gain() -> float:
-	return level * (_map_level if _map_level >= 0.0 else _profile_level)
+	return level * drive * (_map_level if _map_level >= 0.0 else _profile_level)
 
 
 func _process(delta: float) -> void:

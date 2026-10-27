@@ -20,7 +20,7 @@ const COUNTS := {
 	&"magnum_far": 2, &"magnum_fire": 4, &"melee_flesh": 5, &"melee_metal": 5, &"minigun_fire": 5,
 	&"rack": 2, &"reload_in": 4, &"reload_out": 4, &"reload_shell": 4, &"rifle_far": 2, &"rifle_fire": 5,
 	&"shotgun_far": 2, &"shotgun_fire": 5, &"smg_far": 2, &"smg_fire": 5, &"sniper_far": 2,
-	&"sniper_fire": 5, &"swing": 5, &"swing_heavy": 5, &"throw": 5,
+	&"sniper_fire": 5, &"suppressed_fire": 4, &"swing": 5, &"swing_heavy": 5, &"throw": 5,
 }
 
 ## Mix level in dB for the sounds that are not at 0: files are peak-levelled per class, this
@@ -53,12 +53,14 @@ static func defs() -> Array[DotAudioDef]:
 		d.pitch_min = 0.96
 		d.pitch_max = 1.04
 		var s := String(sound)
-		var shot := s.ends_with("_fire") or s == &"explosion"
+		var far := s.ends_with("_far")
+		var shot := s.ends_with("_fire") or s == &"explosion" or far
 		d.priority = 70 if shot else 50
 		d.max_concurrent = 6 if shot else 4
 		# A report carries across a map; a click or a reload is for whoever is close.
 		d.unit_size = 12.0 if shot else 3.0
-		d.max_distance = 260.0 if shot else 40.0
+		# A distant report is the one meant to be heard from far away.
+		d.max_distance = 600.0 if far else 260.0 if shot else 40.0
 		d.tags = [&"weapon"]
 		out.append(d)
 	return out

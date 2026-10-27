@@ -54,3 +54,5 @@ Slices of CC0 recordings, cut, pitched, layered with a synthesised sub-bass thum
 | equipment clicks III | LFA | https://opengameart.org/content/equipment-clicks-iii | `dry` |
 | Impact Sounds 1.0 | Kenney | https://kenney.nl/assets/impact-sounds | `bash`, `impact*`, `melee_*`, `casing` |
 | Sci-fi Sounds 1.0 | Kenney | https://kenney.nl/assets/sci-fi-sounds | `beam_fire`, `charge_fire`, `explosion` layer |
+
+`suppressed_fire` is derived from the stock's own `light_fire` files by `tools/make_suppressed.py` (low-passed, softened, shortened, with a synthesised action clack), so it adds no source.

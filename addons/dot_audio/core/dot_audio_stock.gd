@@ -144,9 +144,11 @@ static func ids() -> Array[StringName]:
 	return out
 
 
-## Adds every stock def whose id the catalogue does not already have. Returns how many.
-static func add_to(catalogue: DotAudioCatalogue) -> int:
-	var added := 0
+## Adds every stock def whose id the catalogue does not already have, the weapon sounds
+## ([DotAudioWeaponStock]) included unless [param weapons] is false, so every game that
+## takes the stock has them. Returns how many.
+static func add_to(catalogue: DotAudioCatalogue, weapons: bool = true) -> int:
+	var added := DotAudioWeaponStock.add_to(catalogue) if weapons else 0
 	for d in footstep_defs() + ambience_defs():
 		if catalogue.has(d.id):
 			continue

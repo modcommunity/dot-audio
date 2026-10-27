@@ -13,7 +13,7 @@ extends "selftest/selftest_ambience.gd"
 ## [/codeblock]
 
 const SECTIONS := 16
-const CHECKS := 222
+const CHECKS := 224
 
 func _ready() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
@@ -757,7 +757,7 @@ func _test_stock() -> void:
 	cat.add(mine)
 	var added := DotAudioStock.add_to(cat)
 	_check(
-		added == DotAudioStock.SURFACES.size() - 1 + DotAudioStock.BEDS.size(),
+		added == DotAudioStock.SURFACES.size() - 1 + DotAudioStock.BEDS.size() + DotAudioWeaponStock.COUNTS.size(),
 		"add_to adds every stock id the game has not defined (%d)" % added
 	)
 	_check(cat.find(&"footstep_wood").path == "res://fixtures/silent.wav", "and a game's own id wins")
@@ -788,7 +788,14 @@ func _test_stock() -> void:
 
 	var wcat := DotAudioCatalogue.new()
 	_check(DotAudioWeaponStock.add_to(wcat) == DotAudioWeaponStock.COUNTS.size(), "weapon stock adds one def per sound")
+	var far_def: DotAudioDef = wcat.find(&"weapon_magnum_far")
+	_check(far_def != null and far_def.max_distance >= 500.0, "a distant report is audible from far, not culled like a click")
 	_check(wcat.validate().ok, "the weapon defs validate")
+	var plain := DotAudioCatalogue.new()
+	DotAudioStock.add_to(plain, false)
+	var both := DotAudioCatalogue.new()
+	DotAudioStock.add_to(both)
+	_check(not plain.has(&"weapon_light_fire") and both.has(&"weapon_light_fire"), "DotAudioStock.add_to brings the weapon sounds unless told not to")
 	var wmissing := PackedStringArray()
 	for d in DotAudioWeaponStock.defs():
 		for p in d.variants:

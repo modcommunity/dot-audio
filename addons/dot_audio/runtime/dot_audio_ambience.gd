@@ -49,8 +49,10 @@ const CALM_BED := &"amb_wind"
 @export_range(0.05, 5.0, 0.05) var check_seconds: float = 0.25
 
 var _map_bed: StringName = &""
-var _map_level := 1.0
+var _map_level := -1.0
 var _map_lively := false
+var _profile_level := 1.0
+var _profile_lively := false
 var _zones: Array[Dictionary] = []
 var _current: StringName = &""
 # Every voice this node started: handle -> {id, gain, target}.
@@ -62,12 +64,23 @@ var _stopped := false
 ## The map's bed. Called on every map load; an empty id plays [member fallback_bed]. [param map_level]
 ## scales [member level] for this map (a forest or a swamp asks for more); [param lively] lets
 ## the birdsong bed play on it.
-func set_map_bed(id: StringName, map_level: float = 1.0, lively: bool = false) -> void:
+func set_map_bed(id: StringName, map_level: float = -1.0, lively: bool = false) -> void:
 	_map_bed = id
-	_map_level = maxf(map_level, 0.0)
+	_map_level = map_level
 	_map_lively = lively
 	_stopped = false
 	_choose()
+
+
+## The map's ambience profile (its document's `ambient.level` and `ambient.lively`, which
+## [DotAmbienceDirector.on_map] forwards). Used unless [method set_map_bed] was given its own.
+func set_map_profile(map_level: float, lively: bool) -> void:
+	_profile_level = maxf(map_level, 0.0)
+	_profile_lively = lively
+	_choose()
+	for h: int in _voices.keys():
+		if manager != null and not manager.shape(h, maxf(sin(float(_voices[h]["gain"]) * PI * 0.5), 0.001) * _gain()):
+			_voices.erase(h)
 
 
 func map_bed() -> StringName:
@@ -109,13 +122,13 @@ func bed_at(point: Vector3) -> StringName:
 	if not best.is_empty():
 		return best["bed"]
 	var bed := _map_bed if _map_bed != &"" else fallback_bed
-	if bed == BIRD_BED and not (birds or _map_lively):
+	if bed == BIRD_BED and not (birds or _map_lively or _profile_lively):
 		return CALM_BED
 	return bed
 
 
 func _gain() -> float:
-	return level * _map_level
+	return level * (_map_level if _map_level >= 0.0 else _profile_level)
 
 
 func _process(delta: float) -> void:

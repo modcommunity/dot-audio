@@ -53,6 +53,8 @@ var _map_id: StringName = &""
 var _doc_mood: StringName = &""
 var _doc_indoor: StringName = &""
 var _doc_extra: StringName = &""
+## The bed layer a map document's `ambient.level` / `ambient.lively` reach (optional; the game assigns it).
+var beds: DotAudioAmbience = null
 var _doc_volume := 1.0
 var _doc_frequency := 1.0
 var _roof := DotAmbienceRoof.new()
@@ -85,7 +87,7 @@ func add_set_dir(dir: String) -> DotResult:
 	return ambient.add_set_dir(dir)
 
 
-## A map arrived. [param doc] may carry `"ambient"`: a mood name or `{mood, indoor, volume, frequency, extra}`.
+## A map arrived. [param doc] may carry `"ambient"`: a mood name or `{mood, indoor, volume, frequency, extra, level, lively}`; `level` scales the bed layer and `lively` lets the birdsong bed play (a forest, a swamp, a park; every other map stays birdless).
 func on_map(id: StringName, doc: Dictionary = {}, names: Array = []) -> void:
 	_map_id = id
 	_read_doc(doc.get("ambient", ""))
@@ -194,6 +196,13 @@ func _read_doc(raw: Variant) -> void:
 	_doc_extra = &""
 	_doc_volume = 1.0
 	_doc_frequency = 1.0
+	var bed_level := 1.0
+	var bed_lively := false
+	if raw is Dictionary:
+		bed_level = float((raw as Dictionary).get("level", 1.0))
+		bed_lively = bool((raw as Dictionary).get("lively", false))
+	if beds != null and is_instance_valid(beds):
+		beds.set_map_profile(bed_level, bed_lively)
 	if raw is String:
 		_doc_mood = StringName(raw)
 	elif raw is Dictionary:

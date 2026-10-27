@@ -17,5 +17,6 @@ extends RefCounted
 #    DotAmbienceSet, DotAmbienceMood, DotAmbienceMoods.
 # 6: DotAmbienceDirector, DotAmbienceRules, DotAudioStock.moods_directory (the stock mood set).
 # 7: DotAudioSlide and the stock slide loops (DotAudioStock.slide_id, slide_defs).
-const LEVEL := 7
+# 8: DotBoxSounds (per-event box sounds, stock set, effect-end once).
+const LEVEL := 8
 const OLDEST := 1

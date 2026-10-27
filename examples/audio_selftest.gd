@@ -762,7 +762,7 @@ func _test_stock() -> void:
 	)
 	_check(cat.find(&"footstep_wood").path == "res://fixtures/silent.wav", "and a game's own id wins")
 	_check(cat.validate().ok, "the stock defs validate")
-	_check(DotAudioStock.ids().all(func(i: StringName) -> bool: return cat.has(i)) and DotAudioStock.ids().size() == 15, "ids() names every one")
+	_check(DotAudioStock.ids().all(func(i: StringName) -> bool: return cat.has(i)) and DotAudioStock.ids(false).size() == 15 and DotAudioStock.ids().size() == 15 + DotAudioWeaponStock.COUNTS.size(), "ids() names every one")
 
 	# The armed half: a def naming a file nobody shipped passes validate() and is silent for
 	# ever. Every path and every variant must exist on disk.

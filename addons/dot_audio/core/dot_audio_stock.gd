@@ -135,12 +135,16 @@ static func ambience_defs() -> Array[DotAudioDef]:
 	return out
 
 
-## Every stock id, footsteps then beds: for a game whose suite asserts its id list is whole.
-static func ids() -> Array[StringName]:
+## Every id [method add_to] installs (footsteps, beds, then the weapon sounds unless
+## [param weapons] is false): for a game whose suite asserts its id list is whole.
+static func ids(weapons: bool = true) -> Array[StringName]:
 	var out: Array[StringName] = []
 	for s in SURFACES:
 		out.append(StringName(FOOTSTEP_PREFIX + String(s)))
 	out.append_array(BEDS)
+	if weapons:
+		for sound: StringName in DotAudioWeaponStock.COUNTS:
+			out.append(DotAudioWeaponStock.id_of(sound))
 	return out
 
 

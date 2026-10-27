@@ -98,3 +98,5 @@ Copy `addons/dot_audio/` and [`dot-core`](https://github.com/modcommunity/dot-co
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
+
+Weapon sounds: `stock/weapons/` has 41 sounds in 173 files (CC0 recordings cut and layered by `tools/make_weapon_stock.py`), as `weapon_<name>` defs through `DotAudioWeaponStock.add_to(catalogue)`, and the packs read them through dot-weapon's `DotWeaponSound`. The audit and the table are in [docs/weapons.md](docs/weapons.md).

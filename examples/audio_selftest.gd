@@ -13,7 +13,7 @@ extends "selftest/selftest_ambience.gd"
 ## [/codeblock]
 
 const SECTIONS := 16
-const CHECKS := 217
+const CHECKS := 222
 
 func _ready() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
@@ -785,6 +785,26 @@ func _test_stock() -> void:
 	_check(DotAudioStock.surface_of("snowbank") == &"snow", "a longer word containing one too")
 	_check(DotAudioStock.surface_of("lava") == &"", "and an unknown one says nothing")
 	_check(DotAudioStock.footstep_id(&"lava") == &"footstep_concrete", "so a step on it is concrete")
+
+	var wcat := DotAudioCatalogue.new()
+	_check(DotAudioWeaponStock.add_to(wcat) == DotAudioWeaponStock.COUNTS.size(), "weapon stock adds one def per sound")
+	_check(wcat.validate().ok, "the weapon defs validate")
+	var wmissing := PackedStringArray()
+	for d in DotAudioWeaponStock.defs():
+		for p in d.variants:
+			if not ResourceLoader.exists(p):
+				wmissing.append(p)
+	_check(wmissing.is_empty(), "every weapon file is there (%s)" % ", ".join(wmissing))
+	var on_disk := 0
+	for f in DirAccess.get_files_at(DotAudioWeaponStock.directory()):
+		if f.ends_with(".ogg"):
+			on_disk += 1
+	var listed := 0
+	for n: StringName in DotAudioWeaponStock.COUNTS:
+		listed += int(DotAudioWeaponStock.COUNTS[n])
+	_check(on_disk == listed, "COUNTS names every file on disk (%d of %d)" % [listed, on_disk])
+	var shot := load(DotAudioWeaponStock.defs()[0].path) as AudioStream
+	_check(shot != null and shot.get_length() > 0.05, "a weapon sound loads")
 
 # --- 11 ---------------------------------------------------------------------
 

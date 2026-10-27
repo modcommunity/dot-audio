@@ -12,6 +12,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | --- | --- |
 | [docs/design.md](docs/design.md) | anything: the sink seam, the pieces, paths not streams, culling, stealing, ducking, variation, silence on failure, looping, reaping, the synthesiser, what is not here |
 | [docs/loudness.md](docs/loudness.md) | footsteps, ambience, a level, the limiter, or measuring a game: the standard and why, the capture tool, the stock set |
+| [docs/weapons.md](docs/weapons.md) | a weapon sound: the audit of what every pack played, the stock table, how packs read it |
 | [docs/ambience.md](docs/ambience.md) | the creepy-ambience layer: moods, sound-set format, settings, map to mood |
 | [docs/history.md](docs/history.md) | touching reaping, looping or the suite's frame waits: the pause-menu silence, the unread `looping` |
 
@@ -30,6 +31,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `runtime/dot_audio_ambience.gd` | `DotAudioAmbience`: a bed per map, zones by box, equal-power crossfades |
 | `runtime/dot_ambience.gd` | `DotAmbience`: moods (looping beds plus sparse random one-shots), crossfade on a change, `pause`/`duck`/`hush` holders, `describe()`; `runtime/dot_ambience_roof.gd` (`DotAmbienceRoof`: upward ray with hysteresis; the game feeds `set_indoors`), `core/dot_ambience_{config,set,mood,moods}.gd` are its settings, sound-set reader and map-to-mood table |
 | `runtime/dot_ambience_director.gd`, `core/dot_ambience_rules.gd` | `DotAmbienceDirector`: map to mood, roof, settings and the server's rules, over `stock/moods/` (the shared eight-mood set) |
+| `core/dot_audio_weapon_stock.gd` | `DotAudioWeaponStock`: the 41 stock weapon sounds as `weapon_<name>` defs; `COUNTS` must match `stock/weapons/` |
 | `stock/` | CC0 footsteps (Kenney) and generated beds; `CREDITS.md` |
 | `web/dot_audio_ceiling.js` | the browser's limiter, loaded by a page before the engine |
 | `tools/loudness.sh`, `tools/dot_audio_capture.gd` | record a game under xvfb and measure it; run from a game's root; a game's `tools/loudness_pilot.gd` drives its player |

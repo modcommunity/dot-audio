@@ -38,3 +38,19 @@ From **Impact Sounds** (1.0) by [Kenney](https://www.kenney.nl), CC0 1.0 ([licen
 ## moods/
 
 The ambience mood set (`moods.json`): CC0 recordings from OpenGameArt, converted and normalised. Per-file sources and authors are in `moods/CREDITS.md`.
+
+## weapons/
+
+Slices of CC0 recordings, cut, pitched, layered with a synthesised sub-bass thump (heavy classes) and peak-levelled by `tools/make_weapon_stock.py`, written as mono Ogg Vorbis. Every source is CC0 1.0; attribution is not required and is given here.
+
+| Source | Author | URL | Used for |
+| --- | --- | --- | --- |
+| The Free Firearm Sound Library (Prepared SFX Library) | Ben Jaszczak, Brian Nelson, Kevin Heras, Matthew Nanney (Still North Media; uploaded by bart) | https://opengameart.org/content/the-free-firearm-sound-library | `*_fire`, `*_far`, `minigun_fire` (1911, Walther PPQ, Bersa, S&W 642, Carl Gustav M45, PPSh, AR-15, SKS, AK-47, Model 1894, Marlin 336, Savage 10, Mosin Nagant, Tikka T3, Arisaka, Springfield 1917, CD, Model 12, Nova, Mossberg) |
+| Medieval sound effects - Weapon Textures (parts 1 and 2) | Ben Jaszczak and Brian Nelson (uploaded by MedicineStorm) | https://opengameart.org/content/medieval-sound-effects-weapon-textures | `swing*`, `throw`, `draw_blade`, `bow_*`, `crossbow_*`, `arrow_pass` |
+| 25 CC0 bang / firework SFX | rubberduck | https://opengameart.org/content/25-cc0-bang-firework-sfx | `launcher_fire`, `explosion` (cannon shots) |
+| Gun reload sounds | Joaken, SpringySpringo | https://opengameart.org/content/gun-reload-sounds | `reload_*`, `equip` |
+| 2 Gun Reloads | StarNinjas | https://opengameart.org/content/2-gun-reloads | `reload_*` |
+| Shotgun Reload Sound effects | zer0sol | https://opengameart.org/content/shotgun-reload-sound-effects | `reload_shell`, `rack` |
+| equipment clicks III | LFA | https://opengameart.org/content/equipment-clicks-iii | `dry` |
+| Impact Sounds 1.0 | Kenney | https://kenney.nl/assets/impact-sounds | `bash`, `impact*`, `melee_*`, `casing` |
+| Sci-fi Sounds 1.0 | Kenney | https://kenney.nl/assets/sci-fi-sounds | `beam_fire`, `charge_fire`, `explosion` layer |

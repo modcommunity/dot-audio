@@ -35,6 +35,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `stock/` | CC0 footsteps (Kenney) and generated beds; `CREDITS.md` |
 | `web/dot_audio_ceiling.js` | the browser's limiter, loaded by a page before the engine |
 | `tools/loudness.sh`, `tools/dot_audio_capture.gd` | record a game under xvfb and measure it; run from a game's root; a game's `tools/loudness_pilot.gd` drives its player |
+| `tools/ambience_levels.gd` | headless table of the Ambience bus at a game's defaults (stock beds and moods through the gain chain, ffmpeg file levels, one-shots per minute); run from a game's root with `--script`; exit 1 over -30 dBFS RMS or 3 one-shots a minute |
 | `tools/sound_compare.tscn` | ear-check the `slide_*` loops at several speeds; `-- --levels` (headless) prints each loop's peak/RMS via ffmpeg |
 | `runtime/dot_audio_manager.gd` | `DotAudioManager`: ids in, limits, `listener_position`, `roll_source`, `play_music`, `duck`, `shape`/`voice` a playing handle |
 | `dot_audio_api.gd` | the API level (`DotAddonApi`); bump `LEVEL` for anything a game can newly call |
@@ -67,6 +68,7 @@ A green run prints "3 ObjectDB instances were leaked at exit": `--verbose` names
 - A real file always outranks the synth bank; which voice stands in for which id is the game's `sound_recipes()`. [design](docs/design.md#the-synthesiser-is-consulted-after-the-filesystem-never-before)
 - `SceneTree.process_frame` fires before `Node._process`; a test must not await a frame to see `_process` run. [history](docs/history.md#a-pause-menu-silenced-the-game)
 
+- Ambience stays quiet unless a map asks: check a change with `tools/ambience_levels.gd` in every game (a computed table, not a capture). [ambience](docs/ambience.md#measuring-the-ambience-bus-headless)
 - Measure a level with `addons/dot_audio/tools/loudness.sh` under xvfb, never headless or Movie Maker (Dummy driver, null sink, silence). [loudness](docs/loudness.md#measuring-addonsdot_audiotoolsloudnesssh)
 - Trust a level only from a run whose `capture camera:` line shows the local player moving; a game the stand-in cannot play brings `tools/loudness_pilot.gd` (`drive(capture, ms)` through the capture's `key`/`turn`/`click`/`point`, never moving a body). [loudness](docs/loudness.md#measuring-addonsdot_audiotoolsloudnesssh)
 - Set a game's level in its catalogue; `limit_master` is a backstop (not on the web: sample playback runs no bus effects) and `loudness_trim_db` a measured nudge added to every voice's gain. [loudness](docs/loudness.md#how-it-is-held)

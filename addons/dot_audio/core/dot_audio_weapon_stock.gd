@@ -61,7 +61,7 @@ static func defs() -> Array[DotAudioDef]:
 		d.unit_size = 12.0 if shot else 3.0
 		# A distant report is the one meant to be heard from far away.
 		d.max_distance = 600.0 if far else 260.0 if shot else 40.0
-		d.tags = [&"weapon"]
+		d.tags = [&"weapon", DotAudioCatalogue.STOCK_TAG]
 		out.append(d)
 	return out
 

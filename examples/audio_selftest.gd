@@ -13,7 +13,7 @@ extends "selftest/selftest_ambience.gd"
 ## [/codeblock]
 
 const SECTIONS := 16
-const CHECKS := 224
+const CHECKS := 225
 
 func _ready() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
@@ -796,6 +796,11 @@ func _test_stock() -> void:
 	var both := DotAudioCatalogue.new()
 	DotAudioStock.add_to(both)
 	_check(not plain.has(&"weapon_light_fire") and both.has(&"weapon_light_fire"), "DotAudioStock.add_to brings the weapon sounds unless told not to")
+	var own := DotAudioDef.new()
+	own.id = &"weapon_swing"
+	own.path = "res://own.ogg"
+	both.add(own)
+	_check(both.validate().ok and both.find(&"weapon_swing") == own, "a game's own def for a stock id replaces the stock one")
 	var wmissing := PackedStringArray()
 	for d in DotAudioWeaponStock.defs():
 		for p in d.variants:

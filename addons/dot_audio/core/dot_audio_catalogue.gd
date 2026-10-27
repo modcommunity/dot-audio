@@ -9,12 +9,22 @@ extends Resource
 ## check the whole catalogue and neither touches a file. What that buys is that a typo in a
 ## sound id fails a boot rather than producing silence in a firefight.
 
+## Tag on the stock defs: a game's own def for the same id replaces them in [method add].
+const STOCK_TAG := &"stock"
+
 @export var defs: Array[DotAudioDef] = []
 
 var _by_id: Dictionary = {}
 
 
+## A def replaces an earlier one with the same id that carries [constant STOCK_TAG], so a game's
+## own voice for an id the stock also names wins; any other repeat is left for [method validate].
 func add(def: DotAudioDef) -> DotAudioCatalogue:
+	for i in defs.size():
+		if defs[i] != null and defs[i].id == def.id and defs[i].tags.has(STOCK_TAG) and not def.tags.has(STOCK_TAG):
+			defs[i] = def
+			_by_id.clear()
+			return self
 	defs.append(def)
 	_by_id.clear()
 	return self

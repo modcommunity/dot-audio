@@ -19,6 +19,9 @@ const SLIDE_PREFIX := "slide_"
 ## The flashlight's switch click pair (`stock/flashlight/`).
 const FLASHLIGHT_IDS: Array[StringName] = [&"flashlight_on", &"flashlight_off"]
 
+## The landing thumps, light to hard (`stock/landing/`); see [method landing_id].
+const LANDING_IDS: Array[StringName] = [&"landing_light", &"landing_medium", &"landing_hard"]
+
 ## Canonical surfaces, each with five files.
 const SURFACES: Array[StringName] = [&"concrete", &"wood", &"grass", &"snow", &"carpet", &"metal"]
 
@@ -171,6 +174,37 @@ static func flashlight_defs() -> Array[DotAudioDef]:
 	return out
 
 
+## The landing thumps: 3D at the player, mild, a neighbour hears a hard one.
+static func landing_defs() -> Array[DotAudioDef]:
+	var out: Array[DotAudioDef] = []
+	var dir := directory().path_join("landing")
+	for s: StringName in LANDING_IDS:
+		var d := DotAudioDef.new()
+		d.id = s
+		d.path = dir.path_join(String(s) + ".ogg")
+		d.kind = DotAudioDef.Kind.POSITIONAL_3D
+		d.bus = &"SFX"
+		d.gain_db = -8.0
+		d.pitch_min = 0.95
+		d.pitch_max = 1.05
+		d.priority = 30
+		d.max_concurrent = 4
+		d.unit_size = 3.0
+		d.max_distance = 28.0
+		d.tags = [&"landing"]
+		out.append(d)
+	return out
+
+
+## Which landing thump a landing at [param impact] m/s downward plays.
+static func landing_id(impact: float) -> StringName:
+	if impact >= 14.0:
+		return &"landing_hard"
+	if impact >= 8.0:
+		return &"landing_medium"
+	return &"landing_light"
+
+
 static func ambience_defs() -> Array[DotAudioDef]:
 	var out: Array[DotAudioDef] = []
 	var dir := directory().path_join("ambience")
@@ -201,6 +235,7 @@ static func ids(weapons: bool = true) -> Array[StringName]:
 		out.append(d.id)
 	out.append_array(BEDS)
 	out.append_array(FLASHLIGHT_IDS)
+	out.append_array(LANDING_IDS)
 	if weapons:
 		for sound: StringName in DotAudioWeaponStock.COUNTS:
 			out.append(DotAudioWeaponStock.id_of(sound))
@@ -212,7 +247,7 @@ static func ids(weapons: bool = true) -> Array[StringName]:
 ## takes the stock has them. Returns how many.
 static func add_to(catalogue: DotAudioCatalogue, weapons: bool = true) -> int:
 	var added := DotAudioWeaponStock.add_to(catalogue) if weapons else 0
-	for d in footstep_defs() + slide_defs() + ambience_defs() + flashlight_defs():
+	for d in footstep_defs() + slide_defs() + ambience_defs() + flashlight_defs() + landing_defs():
 		if catalogue.has(d.id):
 			continue
 		catalogue.add(d)

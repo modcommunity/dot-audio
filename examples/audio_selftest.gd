@@ -13,7 +13,7 @@ extends "selftest/selftest_ambience.gd"
 ## [/codeblock]
 
 const SECTIONS := 17
-const CHECKS := 242
+const CHECKS := 246
 
 func _ready() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
@@ -748,6 +748,13 @@ func _test_shaping() -> void:
 
 # --- 10 ---------------------------------------------------------------------
 
+class LandingCvar extends RefCounted:
+	signal changed(old: Variant, new_value: Variant)
+
+	func get_string() -> String:
+		return "0.6"
+
+
 func _test_stock() -> void:
 	_section("Stock footsteps and beds: real files, every one")
 
@@ -758,17 +765,17 @@ func _test_stock() -> void:
 	cat.add(mine)
 	var added := DotAudioStock.add_to(cat)
 	_check(
-		added == DotAudioStock.SURFACES.size() - 1 + DotAudioStock.BEDS.size() + DotAudioStock.slide_defs().size() + DotAudioStock.FLASHLIGHT_IDS.size() + DotAudioWeaponStock.COUNTS.size(),
+		added == DotAudioStock.SURFACES.size() - 1 + DotAudioStock.BEDS.size() + DotAudioStock.slide_defs().size() + DotAudioStock.FLASHLIGHT_IDS.size() + DotAudioStock.LANDING_IDS.size() + DotAudioWeaponStock.COUNTS.size(),
 		"add_to adds every stock id the game has not defined (%d)" % added
 	)
 	_check(cat.find(&"footstep_wood").path == "res://fixtures/silent.wav", "and a game's own id wins")
 	_check(cat.validate().ok, "the stock defs validate")
-	_check(DotAudioStock.ids().all(func(i: StringName) -> bool: return cat.has(i)) and DotAudioStock.ids(false).size() == 24 and DotAudioStock.ids().size() == 24 + DotAudioWeaponStock.COUNTS.size(), "ids() names every one")
+	_check(DotAudioStock.ids().all(func(i: StringName) -> bool: return cat.has(i)) and DotAudioStock.ids(false).size() == 27 and DotAudioStock.ids().size() == 27 + DotAudioWeaponStock.COUNTS.size(), "ids() names every one")
 
 	# The armed half: a def naming a file nobody shipped passes validate() and is silent for
 	# ever. Every path and every variant must exist on disk.
 	var missing := PackedStringArray()
-	for d in DotAudioStock.footstep_defs() + DotAudioStock.slide_defs() + DotAudioStock.ambience_defs() + DotAudioStock.flashlight_defs():
+	for d in DotAudioStock.footstep_defs() + DotAudioStock.slide_defs() + DotAudioStock.ambience_defs() + DotAudioStock.flashlight_defs() + DotAudioStock.landing_defs():
 		for p in d.variants if not d.variants.is_empty() else PackedStringArray([d.path]):
 			if not ResourceLoader.exists(p):
 				missing.append(p)
@@ -776,6 +783,16 @@ func _test_stock() -> void:
 
 	var fl_on := load(DotAudioStock.flashlight_defs()[0].path) as AudioStream
 	_check(fl_on != null and fl_on.get_length() < 0.3 and cat.find(&"flashlight_off").gain_db < cat.find(&"footstep_concrete").gain_db, "the flashlight clicks are short and quieter than a footstep")
+
+	_check(DotAudioStock.landing_id(3.0) == &"landing_light" and DotAudioStock.landing_id(10.0) == &"landing_medium" and DotAudioStock.landing_id(20.0) == &"landing_hard", "a landing picks a thump by impact")
+	var lrules := DotAudioLandingRules.new()
+	_check(lrules.volume_for(2.0) == 0.0 and lrules.volume_for(20.0) > lrules.volume_for(6.0) and lrules.volume_for(20.0) < 1.0, "a soft landing is silent, a harder one louder, and the default is mild")
+	lrules.volume = 0.0
+	_check(lrules.volume_for(20.0) == 0.0, "volume 0 mutes landings")
+	var lcv := LandingCvar.new()
+	var made := lrules.bind_cvars(func(_n: String, _v: String, _d: String, _f: int) -> Object: return lcv)
+	lcv.changed.emit("0", "0.9")
+	_check(made.size() == 1 and is_equal_approx(lrules.volume, 0.9), "cl_landing_volume follows its cvar live")
 
 	var bed := load(DotAudioStock.ambience_defs()[0].path) as AudioStream
 	_check(bed != null and bed.get_length() > 20.0, "a bed loads and is a long loop, not a one-shot")

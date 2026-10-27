@@ -68,3 +68,7 @@ Seven looping slide scrapes (`slide_generic`, `slide_concrete`, `slide_metal`, `
 ## flashlight/
 
 `flashlight_on.ogg` and `flashlight_off.ogg` are synthesised by `tools/make_flashlight_stock.py` (in the repository, not the addon) from fixed seeds: filtered noise bursts and damped resonances, no recordings and no third-party samples. Dedicated to the public domain under CC0 1.0 by the dot-audio authors.
+
+## landing/
+
+`landing_light.ogg`, `landing_medium.ogg` and `landing_hard.ogg` are synthesised by `tools/make_landing_stock.py` (in the repository, not the addon) from fixed seeds: a falling sine body thump and low-passed noise, no recordings and no third-party samples. Dedicated to the public domain under CC0 1.0 by the dot-audio authors.

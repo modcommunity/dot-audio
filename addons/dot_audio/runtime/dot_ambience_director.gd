@@ -201,7 +201,7 @@ func _read_doc(raw: Variant) -> void:
 		_doc_mood = StringName(str(d.get("mood", "")))
 		_doc_indoor = StringName(str(d.get("indoor", "")))
 		_doc_extra = StringName(str(d.get("extra", "")))
-		_doc_volume = clampf(float(d.get("volume", 1.0)), 0.25, 2.0)
+		_doc_volume = clampf(float(d.get("volume", 1.0)), 0.0, 4.0)
 		_doc_frequency = clampf(float(d.get("frequency", 1.0)), 0.0, 4.0)
 	_apply()
 

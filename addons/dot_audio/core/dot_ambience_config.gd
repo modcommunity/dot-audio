@@ -7,11 +7,11 @@ extends DotConfig
 ## Off silences the whole layer (beds fade out, no one-shots).
 @export var enabled: bool = true
 
-## Linear level of the layer. Low on purpose: a bed is felt, never listened to.
-@export_range(0.0, 1.0, 0.01) var volume: float = 0.5
+## Linear level of the layer. Very low on purpose: a bed is felt, never listened to; a map or server raises it.
+@export_range(0.0, 1.0, 0.01) var volume: float = 0.25
 
 ## One-shot rate: 1 is the set's own intervals, 2 twice as often, 0 none at all.
-@export_range(0.0, 4.0, 0.05) var frequency: float = 1.0
+@export_range(0.0, 4.0, 0.05) var frequency: float = 0.5
 
 ## A mood that wins over whatever the game asks for. Empty leaves it to the game.
 @export var mood: String = ""

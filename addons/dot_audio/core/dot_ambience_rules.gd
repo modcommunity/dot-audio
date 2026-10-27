@@ -15,10 +15,10 @@ var prefix := "dot"
 const VARS := {
 	"enabled": ["ambient", 1.0, 0.0, 1.0, true,
 		"The creepy ambience (quiet beds and distant sounds under the map): 1 on, 0 off."],
-	"volume": ["ambient_volume", 0.5, 0.0, 1.0, true,
-		"Level of the ambience. 0.5 is the files' own quiet level."],
-	"frequency": ["ambient_frequency", 1.0, 0.0, 4.0, true,
-		"How often the distant one-shots come: 1 normal, 2 twice as often, 0 none."],
+	"volume": ["ambient_volume", 0.25, 0.0, 1.0, true,
+		"Level of the ambience. 0.25 is a whisper under the map; 0.5 is the files' own quiet level."],
+	"frequency": ["ambient_frequency", 0.5, 0.0, 4.0, true,
+		"How often the distant one-shots come: 1 the set's own intervals, 2 twice as often, 0 none."],
 	"indoor": ["ambient_indoor", 1.0, 0.0, 1.0, true,
 		"Under a roof the ambience crossfades to the map's indoor mood: 1 on, 0 keeps the outdoor mood everywhere."],
 	"mood": ["ambient_mood", "", null, null, true,
@@ -30,8 +30,8 @@ const VARS := {
 }
 
 var enabled: float = 1.0
-var volume: float = 0.5
-var frequency: float = 1.0
+var volume: float = 0.25
+var frequency: float = 0.5
 var indoor: float = 1.0
 var mood: String = ""
 var allowed: String = ""

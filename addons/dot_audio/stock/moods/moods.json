@@ -6,11 +6,11 @@
    "beds": [
     {
      "file": "outdoor_night/crickets.ogg",
-     "volume": 0.8
+     "volume": 0.48
     },
     {
      "file": "outdoor_night/wind.ogg",
-     "volume": 0.6
+     "volume": 0.36
     }
    ],
    "oneshots": [
@@ -19,10 +19,10 @@
       "outdoor_night/bird.ogg"
      ],
      "interval": [
-      40,
-      120
+      240,
+      600
      ],
-     "volume": 0.4,
+     "volume": 0.2,
      "pitch": [
       0.92,
       1.08
@@ -37,10 +37,10 @@
       "outdoor_night/creak.ogg"
      ],
      "interval": [
-      30,
-      90
+      60,
+      180
      ],
-     "volume": 0.5,
+     "volume": 0.3,
      "pitch": [
       0.92,
       1.08
@@ -55,10 +55,10 @@
       "outdoor_night/moan_far.ogg"
      ],
      "interval": [
-      70,
-      180
+      140,
+      360
      ],
-     "volume": 0.45,
+     "volume": 0.27,
      "pitch": [
       0.92,
       1.08
@@ -75,7 +75,7 @@
    "beds": [
     {
      "file": "indoor_hall/rumble.ogg",
-     "volume": 0.8
+     "volume": 0.48
     }
    ],
    "oneshots": [
@@ -85,10 +85,10 @@
       "indoor_hall/creak_b.ogg"
      ],
      "interval": [
-      25,
-      80
+      50,
+      160
      ],
-     "volume": 0.5,
+     "volume": 0.3,
      "pitch": [
       0.92,
       1.08
@@ -103,10 +103,10 @@
       "indoor_hall/elevator.ogg"
      ],
      "interval": [
-      90,
-      200
+      180,
+      400
      ],
-     "volume": 0.4,
+     "volume": 0.24,
      "pitch": [
       0.92,
       1.08
@@ -121,10 +121,10 @@
       "indoor_hall/moan_far.ogg"
      ],
      "interval": [
-      70,
-      170
+      140,
+      340
      ],
-     "volume": 0.45,
+     "volume": 0.27,
      "pitch": [
       0.92,
       1.08
@@ -141,15 +141,15 @@
    "beds": [
     {
      "file": "industrial/generator.ogg",
-     "volume": 0.7
+     "volume": 0.42
     },
     {
      "file": "industrial/machine_a.ogg",
-     "volume": 0.6
+     "volume": 0.36
     },
     {
      "file": "industrial/machine_b.ogg",
-     "volume": 0.5
+     "volume": 0.3
     }
    ],
    "oneshots": [
@@ -158,10 +158,10 @@
       "industrial/creak.ogg"
      ],
      "interval": [
-      25,
-      70
+      50,
+      140
      ],
-     "volume": 0.5,
+     "volume": 0.3,
      "pitch": [
       0.92,
       1.08
@@ -176,10 +176,10 @@
       "industrial/collapse.ogg"
      ],
      "interval": [
-      90,
-      220
+      180,
+      440
      ],
-     "volume": 0.45,
+     "volume": 0.27,
      "pitch": [
       0.92,
       1.08
@@ -196,11 +196,11 @@
    "beds": [
     {
      "file": "cave_tunnel/dungeon.ogg",
-     "volume": 0.8
+     "volume": 0.48
     },
     {
      "file": "cave_tunnel/drip.ogg",
-     "volume": 0.5
+     "volume": 0.3
     }
    ],
    "oneshots": [
@@ -209,10 +209,10 @@
       "cave_tunnel/breath.ogg"
      ],
      "interval": [
-      60,
-      150
+      120,
+      300
      ],
-     "volume": 0.4,
+     "volume": 0.24,
      "pitch": [
       0.92,
       1.08
@@ -227,10 +227,10 @@
       "cave_tunnel/collapse.ogg"
      ],
      "interval": [
-      100,
-      240
+      200,
+      480
      ],
-     "volume": 0.45,
+     "volume": 0.27,
      "pitch": [
       0.92,
       1.08
@@ -245,10 +245,10 @@
       "cave_tunnel/moan_a.ogg"
      ],
      "interval": [
-      70,
-      170
+      140,
+      340
      ],
-     "volume": 0.45,
+     "volume": 0.27,
      "pitch": [
       0.92,
       1.08
@@ -265,15 +265,15 @@
    "beds": [
     {
      "file": "snow_wind/wind_a.ogg",
-     "volume": 0.7
+     "volume": 0.42
     },
     {
      "file": "snow_wind/wind_b.ogg",
-     "volume": 0.6
+     "volume": 0.36
     },
     {
      "file": "snow_wind/wind_c.ogg",
-     "volume": 0.5
+     "volume": 0.3
     }
    ],
    "oneshots": [
@@ -282,10 +282,10 @@
       "snow_wind/creak.ogg"
      ],
      "interval": [
-      30,
-      90
+      60,
+      180
      ],
-     "volume": 0.5,
+     "volume": 0.3,
      "pitch": [
       0.92,
       1.08
@@ -300,10 +300,10 @@
       "snow_wind/moan.ogg"
      ],
      "interval": [
-      80,
-      200
+      160,
+      400
      ],
-     "volume": 0.4,
+     "volume": 0.24,
      "pitch": [
       0.92,
       1.08
@@ -320,15 +320,15 @@
    "beds": [
     {
      "file": "swamp/swamp.ogg",
-     "volume": 0.8
+     "volume": 0.48
     },
     {
      "file": "swamp/atmosphere_a.ogg",
-     "volume": 0.5
+     "volume": 0.3
     },
     {
      "file": "swamp/atmosphere_b.ogg",
-     "volume": 0.5
+     "volume": 0.3
     }
    ],
    "oneshots": [
@@ -338,10 +338,10 @@
       "swamp/frog_b.ogg"
      ],
      "interval": [
-      15,
-      50
+      30,
+      100
      ],
-     "volume": 0.4,
+     "volume": 0.24,
      "pitch": [
       0.92,
       1.08
@@ -356,10 +356,10 @@
       "swamp/bubbling.ogg"
      ],
      "interval": [
-      40,
-      120
+      80,
+      240
      ],
-     "volume": 0.4,
+     "volume": 0.24,
      "pitch": [
       0.92,
       1.08
@@ -374,10 +374,10 @@
       "swamp/bird.ogg"
      ],
      "interval": [
-      60,
-      150
+      240,
+      600
      ],
-     "volume": 0.4,
+     "volume": 0.2,
      "pitch": [
       0.92,
       1.08
@@ -394,15 +394,15 @@
    "beds": [
     {
      "file": "city_ruins/rain.ogg",
-     "volume": 0.6
+     "volume": 0.36
     },
     {
      "file": "city_ruins/storm.ogg",
-     "volume": 0.6
+     "volume": 0.36
     },
     {
      "file": "city_ruins/siren.ogg",
-     "volume": 0.4
+     "volume": 0.24
     }
    ],
    "oneshots": [
@@ -411,10 +411,10 @@
       "city_ruins/creak.ogg"
      ],
      "interval": [
-      30,
-      90
+      60,
+      180
      ],
-     "volume": 0.5,
+     "volume": 0.3,
      "pitch": [
       0.92,
       1.08
@@ -430,10 +430,10 @@
       "city_ruins/moan_b.ogg"
      ],
      "interval": [
-      70,
-      180
+      140,
+      360
      ],
-     "volume": 0.45,
+     "volume": 0.27,
      "pitch": [
       0.92,
       1.08
@@ -450,15 +450,15 @@
    "beds": [
     {
      "file": "interior_horror/ghostly.ogg",
-     "volume": 0.7
+     "volume": 0.42
     },
     {
      "file": "interior_horror/horror.ogg",
-     "volume": 0.6
+     "volume": 0.36
     },
     {
      "file": "interior_horror/dark.ogg",
-     "volume": 0.6
+     "volume": 0.36
     }
    ],
    "oneshots": [
@@ -467,10 +467,10 @@
       "interior_horror/breath.ogg"
      ],
      "interval": [
-      50,
-      130
+      100,
+      260
      ],
-     "volume": 0.4,
+     "volume": 0.24,
      "pitch": [
       0.92,
       1.08
@@ -486,10 +486,10 @@
       "interior_horror/chant_b.ogg"
      ],
      "interval": [
-      80,
-      200
+      160,
+      400
      ],
-     "volume": 0.4,
+     "volume": 0.24,
      "pitch": [
       0.92,
       1.08
@@ -506,10 +506,10 @@
       "interior_horror/ghost_c.ogg"
      ],
      "interval": [
-      45,
-      120
+      90,
+      240
      ],
-     "volume": 0.45,
+     "volume": 0.27,
      "pitch": [
       0.92,
       1.08
@@ -527,10 +527,10 @@
       "interior_horror/ghoul_d.ogg"
      ],
      "interval": [
-      60,
-      150
+      120,
+      300
      ],
-     "volume": 0.45,
+     "volume": 0.27,
      "pitch": [
       0.92,
       1.08

@@ -24,7 +24,7 @@ extends DotConfig
 @export_range(0.0, 1.0, 0.01) var sfx: float = 1.0
 @export_range(0.0, 1.0, 0.01) var ui: float = 0.8
 @export_range(0.0, 1.0, 0.01) var voice: float = 1.0
-@export_range(0.0, 1.0, 0.01) var ambience: float = 0.7
+@export_range(0.0, 1.0, 0.01) var ambience: float = 0.35
 
 ## Whether the Ambience bus is `ambience * sfx`, so the Effects slider reaches wind and birds.
 ## Off for a game whose Ambience slider must be independent.

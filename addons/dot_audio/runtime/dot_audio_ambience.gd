@@ -32,15 +32,25 @@ var manager: DotAudioManager = null
 var listener: Node3D = null
 
 ## Played when a map names no bed.
-var fallback_bed: StringName = &"amb_outdoor"
+var fallback_bed: StringName = &"amb_wind"
 
-## A linear scale on every bed, for a map that wants its bed quieter or louder.
-var level: float = 1.0
+## A linear scale on every bed. Low by default: a bed is felt, never listened to. A map that
+## wants more says so through [method set_map_bed]'s `map_level`.
+var level: float = 0.35
+
+## The birdsong bed. Constant birds are what players found annoying, so [constant BIRD_BED] plays
+## as [constant CALM_BED] unless this is on or the map asks for it ([method set_map_bed] `lively`).
+var birds: bool = false
+
+const BIRD_BED := &"amb_outdoor"
+const CALM_BED := &"amb_wind"
 
 @export_range(0.0, 20.0, 0.1) var fade_seconds: float = 2.5
 @export_range(0.05, 5.0, 0.05) var check_seconds: float = 0.25
 
 var _map_bed: StringName = &""
+var _map_level := 1.0
+var _map_lively := false
 var _zones: Array[Dictionary] = []
 var _current: StringName = &""
 # Every voice this node started: handle -> {id, gain, target}.
@@ -49,9 +59,13 @@ var _since_check := 0.0
 var _stopped := false
 
 
-## The map's bed. Called on every map load; an empty id plays [member fallback_bed].
-func set_map_bed(id: StringName) -> void:
+## The map's bed. Called on every map load; an empty id plays [member fallback_bed]. [param map_level]
+## scales [member level] for this map (a forest or a swamp asks for more); [param lively] lets
+## the birdsong bed play on it.
+func set_map_bed(id: StringName, map_level: float = 1.0, lively: bool = false) -> void:
 	_map_bed = id
+	_map_level = maxf(map_level, 0.0)
+	_map_lively = lively
 	_stopped = false
 	_choose()
 
@@ -94,7 +108,14 @@ func bed_at(point: Vector3) -> StringName:
 				best = z
 	if not best.is_empty():
 		return best["bed"]
-	return _map_bed if _map_bed != &"" else fallback_bed
+	var bed := _map_bed if _map_bed != &"" else fallback_bed
+	if bed == BIRD_BED and not (birds or _map_lively):
+		return CALM_BED
+	return bed
+
+
+func _gain() -> float:
+	return level * _map_level
 
 
 func _process(delta: float) -> void:
@@ -144,7 +165,7 @@ func _start(id: StringName, fade: float) -> void:
 		_voices[existing]["target"] = 1.0
 		return
 	var start := 0.0 if fade > 0.0 else 1.0
-	var h := manager.play(id, maxf(start, 0.001) * level)
+	var h := manager.play(id, maxf(start, 0.001) * _gain())
 	if h == 0:
 		return
 	_voices[h] = {"id": id, "gain": start, "target": 1.0}
@@ -170,7 +191,7 @@ func _ease(delta: float) -> void:
 			_voices.erase(h)
 			continue
 		# An equal-power curve, so a crossfade does not dip in the middle.
-		if not manager.shape(h, maxf(sin(g * PI * 0.5), 0.001) * level):
+		if not manager.shape(h, maxf(sin(g * PI * 0.5), 0.001) * _gain()):
 			_voices.erase(h)
 
 

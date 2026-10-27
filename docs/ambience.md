@@ -21,8 +21,8 @@ Defaults < JSON file < environment (`DOT_AMBIENCE_*`) < command line (`--ambienc
 | Key | Default | Meaning |
 | --- | --- | --- |
 | `enabled` | true | off fades everything out |
-| `volume` | 0.5 | linear; 0.5 is the files' own level (the factor is 2 x volume) |
-| `frequency` | 1.0 | one-shot rate: intervals are divided by it; 0 none |
+| `volume` | 0.25 | linear; 0.5 is the files' own level (the factor is 2 x volume), so the default is 6 dB under it; a map document's `"ambient": {"volume": n}` multiplies it (0 to 4) |
+| `frequency` | 0.5 | one-shot rate: intervals are divided by it; 0 none |
 | `mood` | empty | forces a mood over the game's request (ignored if it names no mood) |
 | `allowed_moods` | empty | comma list; a request outside it gives way to the default or the first allowed mood |
 | `sound_dir` | empty | extra sound set; its moods replace built-in ones of the same name |

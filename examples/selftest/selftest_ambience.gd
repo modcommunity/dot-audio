@@ -17,7 +17,7 @@ func _test_ambience_and_loudness() -> void:
 	amb.set_process(false)
 
 	amb.set_map_bed(&"")
-	_check(amb.current_bed() == &"amb_outdoor", "a map that names no bed still gets one")
+	_check(amb.current_bed() == &"amb_wind", "a map that names no bed still gets one, without birds")
 	amb.set_map_bed(&"amb_night")
 	_check(amb.current_bed() == &"amb_night" and sink.count_of(&"amb_night") == 1, "a map's own bed plays")
 	amb.add_zone(AABB(Vector3(0, 0, 0), Vector3(10, 5, 10)), &"amb_indoor")
@@ -187,7 +187,7 @@ func _creepy_oneshots(amb: DotAmbience, m: DotAudioManager, heard: Array) -> voi
 	var db := -99.0
 	for h: int in amb._voices.keys():
 		db = float(m.voice(h).get("volume_db", 0.0))
-	_check(is_equal_approx(db, linear_to_db(0.8)) and amb.target_level() == 0.5, "the default level is nominal for the file, which is a quiet bed (%.1f dB re file)" % db)
+	_check(is_equal_approx(db, linear_to_db(0.8 * 2.0 * amb.config.volume)) and amb.target_level() == amb.config.volume and amb.config.volume <= 0.25, "the default level is nominal for the file, which is a quiet bed (%.1f dB re file)" % db)
 
 	for i in 12:
 		amb.advance(5.0)
@@ -247,18 +247,18 @@ func _creepy_overrides(amb: DotAmbience) -> void:
 func _creepy_holders(amb: DotAmbience, heard: Array) -> void:
 	amb.duck(&"fight", 0.3)
 	amb.duck(&"other", 0.6)
-	_check(is_equal_approx(amb.target_level(), 0.5 * 0.3), "ducking takes the lowest scale")
+	_check(is_equal_approx(amb.target_level(), amb.config.volume * 0.3), "ducking takes the lowest scale")
 	var count := heard.size()
 	for i in 30:
 		amb.advance(5.0)
 	_check(heard.size() == count, "a ducked layer plays no one-shots")
 	amb.unduck(&"fight")
-	_check(is_equal_approx(amb.target_level(), 0.5 * 0.6), "holders release one at a time")
+	_check(is_equal_approx(amb.target_level(), amb.config.volume * 0.6), "holders release one at a time")
 	amb.unduck(&"other")
 	amb.hush(&"talk")
 	for i in 30:
 		amb.advance(5.0)
-	_check(heard.size() == count and amb.target_level() == 0.5, "hush stops one-shots but not beds")
+	_check(heard.size() == count and amb.target_level() == amb.config.volume, "hush stops one-shots but not beds")
 	amb.unhush(&"talk")
 	amb.pause(&"menu")
 	_check(amb.target_level() == 0.0, "pause takes the level to nothing")
@@ -268,7 +268,7 @@ func _creepy_holders(amb: DotAmbience, heard: Array) -> void:
 	amb.resume(&"menu")
 	for i in 80:
 		amb.advance(1.0)
-	_check(is_equal_approx(amb._level, 0.5), "resume brings it back")
+	_check(is_equal_approx(amb._level, amb.config.volume), "resume brings it back")
 
 	amb.config.enabled = false
 	for i in 80:

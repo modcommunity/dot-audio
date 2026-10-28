@@ -160,6 +160,13 @@ func _test_footsteps() -> void:
 	steps.advance(body, 1.0 / 60.0)
 	_check(heard.is_empty(), "a teleport is not a walk")
 
+	_check_surface_lookup(steps, body)
+	body.queue_free()
+	steps.queue_free()
+	m.queue_free()
+
+## Surface lookup and track()/keep() bookkeeping, split out of _test_footsteps.
+func _check_surface_lookup(steps: DotAudioFootsteps, body: Node3D) -> void:
 	var floor := StaticBody3D.new()
 	floor.name = "Ground"
 	floor.set_meta(&"surface", "plank")
@@ -195,9 +202,6 @@ func _test_footsteps() -> void:
 
 	floor.queue_free()
 	tile.queue_free()
-	body.queue_free()
-	steps.queue_free()
-	m.queue_free()
 
 # --- 12 ---------------------------------------------------------------------
 

@@ -39,6 +39,18 @@ func _test_ambience_and_loudness() -> void:
 	_check(is_equal_approx(amb._gain(), amb.level * 1.8) and amb.current_bed() == &"amb_outdoor", "a map document's ambient.level and lively reach the bed through the director")
 	dir_node.on_map(&"doc_map2", {})
 	_check(is_equal_approx(amb._gain(), amb.level) and amb.current_bed() == &"amb_wind", "a document without ambient.level leaves the bed at its quiet default")
+	var doc_path := "user://selftest_ambience_doc.json"
+	var doc_file := FileAccess.open(doc_path, FileAccess.WRITE)
+	doc_file.store_string('{"ambient": {"level": 1.4, "lively": true}}')
+	doc_file.close()
+	var fake_map := {"meta": {"doc": doc_path}}
+	dir_node.map_lookup = func(id: StringName) -> Variant: return fake_map if id == &"looked_up" else null
+	dir_node.on_map(&"doc_map2", {})
+	dir_node.on_map(&"looked_up")
+	_check(is_equal_approx(amb._gain(), amb.level * 1.4) and amb.current_bed() == &"amb_outdoor", "on_map(id) alone finds the document through map_lookup (meta.doc path)")
+	dir_node.on_map(&"other_map")
+	_check(is_equal_approx(amb._gain(), amb.level), "a map the lookup does not know leaves the bed quiet")
+	DirAccess.remove_absolute(doc_path)
 	dir_node.free()
 	amb.set_map_bed(&"amb_night")
 	_check(amb.current_bed() == &"amb_night" and sink.count_of(&"amb_night") == 1, "a map's own bed plays")

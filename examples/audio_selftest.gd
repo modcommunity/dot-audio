@@ -13,7 +13,7 @@ extends "selftest/selftest_ambience.gd"
 ## [/codeblock]
 
 const SECTIONS := 17
-const CHECKS := 251
+const CHECKS := 253
 
 func _ready() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)

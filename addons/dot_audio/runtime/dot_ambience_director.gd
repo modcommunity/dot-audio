@@ -57,6 +57,8 @@ var _doc_extra: StringName = &""
 var beds: DotAudioAmbience = null
 var _doc_volume := 1.0
 var _doc_frequency := 1.0
+## Optional `Callable(id) -> Object`: the game's map definition (a `DotMapDef` or a Dictionary with `meta`, read by duck type), so [method on_map] without a document finds the map's `ambient` in its `meta` (inline, or `meta.doc`, a JSON path).
+var map_lookup: Callable = Callable()
 var _roof := DotAmbienceRoof.new()
 var _map_names: Array = []
 
@@ -90,12 +92,33 @@ func add_set_dir(dir: String) -> DotResult:
 ## A map arrived. [param doc] may carry `"ambient"`: a mood name or `{mood, indoor, volume, frequency, extra, level, lively}`; `level` scales the bed layer and `lively` lets the birdsong bed play (a forest, a swamp, a park; every other map stays birdless).
 func on_map(id: StringName, doc: Dictionary = {}, names: Array = []) -> void:
 	_map_id = id
+	if doc.is_empty():
+		doc = _doc_from_lookup(id)
 	_read_doc(doc.get("ambient", ""))
 	_roof.roofed = false
 	if ambient != null:
 		ambient.set_indoors(false)
 	_map_names = [String(id), str(doc.get("name", ""))] + names
 	_choose_mood()
+
+
+func _doc_from_lookup(id: StringName) -> Dictionary:
+	if not map_lookup.is_valid():
+		return {}
+	var map: Variant = map_lookup.call(id)
+	var meta: Variant = null
+	if map is Dictionary:
+		meta = (map as Dictionary).get("meta")
+	elif map is Object and "meta" in (map as Object):
+		meta = (map as Object).get("meta")
+	if not (meta is Dictionary):
+		return {}
+	var found: Dictionary = meta
+	if not found.has("ambient") and str(found.get("doc", "")) != "" and FileAccess.file_exists(str(found["doc"])):
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(str(found["doc"])))
+		if parsed is Dictionary:
+			found = parsed
+	return found
 
 
 ## A converted map's `sounds` block arrived with its world; its names vote unless the document or a table decided.

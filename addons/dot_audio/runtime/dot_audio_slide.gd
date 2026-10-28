@@ -48,8 +48,16 @@ func keep(bodies: Array, sliding_of: Callable) -> void:
 			if not _bodies.has(b):
 				track(b, sliding_of.bind(b))
 	for b: Variant in _bodies.keys():
-		if not seen.has(b):
+		if seen.has(b):
+			continue
+		if is_instance_valid(b):
 			untrack(b)
+		else:
+			# Freed since last frame: a typed untrack(Node3D) cannot take it.
+			var st: Dictionary = _bodies[b]
+			if manager != null and int(st.get("handle", 0)) != 0:
+				manager.stop(int(st["handle"]))
+			_bodies.erase(b)
 
 
 func untrack(body: Node3D) -> void:

@@ -265,6 +265,13 @@ func _test_slide() -> void:
 	_check(sink.count_of(&"slide_generic") == 1, "slide_generic is the one that played")
 	slide.untrack(body)
 
+	var gone := Node3D.new()
+	add_child(gone)
+	slide.track(gone, func() -> bool: return true)
+	gone.free()
+	slide.keep([], func(_b: Node3D) -> bool: return false)
+	_check(slide.describe()["bodies"] == 0, "keep drops a body freed since the last frame")
+
 
 func _test_raw_fallback() -> void:
 	_section("An addon pack's sound with no imported output still plays")

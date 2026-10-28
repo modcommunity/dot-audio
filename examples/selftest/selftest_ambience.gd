@@ -32,6 +32,14 @@ func _test_ambience_and_loudness() -> void:
 	amb.drive = 99.0
 	_check(is_equal_approx(amb.drive, DotAudioAmbience.MAX_DRIVE), "drive is clamped")
 	amb.drive = 1.0
+	var dir_node := DotAmbienceDirector.new()
+	dir_node.beds = amb
+	amb.set_map_bed(&"amb_outdoor")
+	dir_node.on_map(&"doc_map", {"ambient": {"level": 1.8, "lively": true}})
+	_check(is_equal_approx(amb._gain(), amb.level * 1.8) and amb.current_bed() == &"amb_outdoor", "a map document's ambient.level and lively reach the bed through the director")
+	dir_node.on_map(&"doc_map2", {})
+	_check(is_equal_approx(amb._gain(), amb.level) and amb.current_bed() == &"amb_wind", "a document without ambient.level leaves the bed at its quiet default")
+	dir_node.free()
 	amb.set_map_bed(&"amb_night")
 	_check(amb.current_bed() == &"amb_night" and sink.count_of(&"amb_night") == 1, "a map's own bed plays")
 	amb.add_zone(AABB(Vector3(0, 0, 0), Vector3(10, 5, 10)), &"amb_indoor")

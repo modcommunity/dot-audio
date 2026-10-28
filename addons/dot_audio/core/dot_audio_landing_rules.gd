@@ -2,7 +2,6 @@ class_name DotAudioLandingRules
 extends RefCounted
 ## The client's landing-sound settings: one volume cvar, mild by default.
 
-const CHANNEL := "audio.landing"
 const CVAR_VOLUME := "cl_landing_volume"
 
 ## 0 mutes landings; 1 is the stock def's level (cl_landing_volume).

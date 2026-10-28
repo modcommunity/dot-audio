@@ -15,8 +15,6 @@ extends Node
 ## [method DotAudioStock.surface_of]); a collider that says nothing is [member default_surface],
 ## and with none set the generic ground scrape plays. Never on a server: it only plays.
 
-const CHANNEL := "audio.slide"
-
 ## A slide started or ended, with the surface it scrapes.
 signal slide_started(body: Node3D, surface: StringName)
 signal slide_stopped(body: Node3D)

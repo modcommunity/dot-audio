@@ -27,8 +27,6 @@ extends Node
 ## [b]Never on a server.[/b] It only plays; [signal stepped] tells a game what was heard,
 ## which is how a bot that listens hears without a second footstep system.
 
-const CHANNEL := "audio.steps"
-
 ## A step, with the surface and how loud it was (0..1 of a run).
 signal stepped(body: Node3D, surface: StringName, loudness: float)
 

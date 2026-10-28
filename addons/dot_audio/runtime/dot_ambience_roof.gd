@@ -1,16 +1,9 @@
 class_name DotAmbienceRoof
 extends RefCounted
 
-## Whether the listener stands under a roof: a short upward ray a few times a second, with
-## hysteresis so a doorway or a gap in a ceiling does not flap the mood. Feeds [method DotAmbience.set_indoors].
-##
-## [codeblock]
-## var roof := DotAmbienceRoof.new()
-## roof.mask = physics.layer_mask(&"world")
-## # each frame, with the listener's eye position:
-## if roof.step(delta, eye, get_world_3d().direct_space_state):
-##     ambience.set_indoors(roof.roofed)
-## [/codeblock]
+## Whether the listener stands under a roof: a short upward ray a few times a second, with hysteresis
+## so a doorway does not flap the mood. Call `step(delta, eye, space)` each frame and feed
+## [method DotAmbience.set_indoors] with `roofed`.
 
 ## How far up a ceiling counts, in metres. A hangar's or a stadium's roof beyond it is the open air.
 var height := 8.0

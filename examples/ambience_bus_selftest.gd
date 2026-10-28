@@ -1,10 +1,7 @@
 extends Node
 
 ## The Ambience bus follows the Effects slider: wind and birdsong are effects to a player.
-##
-## [codeblock]
-## godot --headless --path . res://examples/ambience_bus_selftest.tscn
-## [/codeblock]
+## Run: `godot --headless --path . res://examples/ambience_bus_selftest.tscn`.
 
 const CHECKS := 9
 

@@ -1,19 +1,9 @@
 class_name DotAudioSlide
 extends Node
 
-## The scrape of a body sliding along the ground: one looping voice per sliding body, chosen by
-## the surface under it, louder and higher the faster it goes, heard by everyone nearby.
-##
-## [codeblock]
-## var slide := DotAudioSlide.new()
-## slide.manager = audio_manager
-## add_child(slide)
-## slide.keep(players, func(p): return p.controller.state.is_sliding())
-## [/codeblock]
-##
-## The surface comes the way [DotAudioFootsteps] finds it (collider meta, group or name, through
-## [method DotAudioStock.surface_of]); a collider that says nothing is [member default_surface],
-## and with none set the generic ground scrape plays. Never on a server: it only plays.
+## The scrape of a body sliding along the ground: one looping voice per sliding body, chosen by its
+## surface (found as [DotAudioFootsteps] does; none set plays the generic scrape), louder and higher
+## the faster it goes. Use `slide.keep(players, is_sliding_callable)`. Never on a server.
 
 ## A slide started or ended, with the surface it scrapes.
 signal slide_started(body: Node3D, surface: StringName)

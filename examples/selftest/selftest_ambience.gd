@@ -75,6 +75,13 @@ func _test_ambience_and_loudness() -> void:
 	amb.stop(0.0)
 	_check(amb.current_bed() == &"", "stop() is quiet until the next map")
 
+	_loudness_limiter(cat)
+
+	amb.queue_free()
+	m.queue_free()
+
+
+func _loudness_limiter(cat: DotAudioCatalogue) -> void:
 	var before := AudioServer.get_bus_effect_count(0)
 	var lim := DotAudioLoudness.install_limiter(-2.0)
 	var again := DotAudioLoudness.install_limiter(1.5)
@@ -107,9 +114,6 @@ func _test_ambience_and_loudness() -> void:
 		"the trim is on every voice, so a browser without bus effects hears it too"
 	)
 	trimmed.queue_free()
-
-	amb.queue_free()
-	m.queue_free()
 
 
 
@@ -386,8 +390,8 @@ func _creepy_lifecycle(amb: DotAmbience, m: DotAudioManager, dir: String) -> voi
 	_check(sm.oneshots.size() == 1 and sm.oneshots[0]["files"].size() == 1, "a one-shot's files may be a single string")
 
 
-## [b]The glue a game used to write itself.[/b] The stock set loads, a map picks its mood by document,
-## table, prefix and name vote, the rules and the player's sliders multiply, and a player's mute wins.
+## The stock set loads, a map picks its mood by document, table, prefix and name vote, the rules and the
+## player's sliders multiply, and a player's mute wins.
 func _test_ambience_director() -> void:
 	_section("Ambience director: stock moods, map to mood, settings")
 	var m := _manager(DotAudioCatalogue.new(), 16)

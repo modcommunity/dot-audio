@@ -1,12 +1,9 @@
 class_name DotAmbienceMood
 extends RefCounted
 
-## One mood: looping beds that play together, and one-shots that come at random.
-##
-## A bed is [code]{file, volume}[/code]. A one-shot is [code]{files, interval: [min, max],
-## volume, pitch: [min, max], distance: [min, max]}[/code]: one file of [code]files[/code] is
-## heard every [code]interval[/code] seconds (divided by the frequency setting), from a random
-## direction and distance. Paths are absolute by the time a mood is used.
+## One mood: looping beds `{file, volume}` plus random one-shots `{files, interval, volume, pitch, distance}`.
+## A one-shot is heard every `interval` seconds (divided by the frequency setting) from a random direction
+## and distance. Paths are absolute by the time a mood is used.
 
 var name: StringName = &""
 var volume: float = 1.0

@@ -1,21 +1,9 @@
 class_name DotAmbience
 extends Node
 
-## A creepy-ambience layer: a mood is a set of looping beds plus sparse random one-shots, and the
-## layer crossfades when the mood changes. Quiet by default; it never starts music-like.
-##
-## [codeblock]
-## var amb := DotAmbience.new()
-## amb.manager = audio_manager
-## add_child(amb)
-## amb.add_set_dir("res://sounds/ambience")     # moods.json and its files
-## amb.set_mood(&"cave_tunnel")                 # on every map load
-## amb.duck(&"fight", 0.3)                      # quieter while something is happening
-## [/codeblock]
-##
-## [b]Driven by [method advance].[/b] [method _process] only calls it, so a test steps time without
-## frames. [b]Placed through the manager[/b], so the pool, the cull and the null sink all apply.
-## [b]Settings are live:[/b] [member config] is read each step, nothing needs a reload.
+## A creepy-ambience layer: a mood is a set of looping beds plus sparse random one-shots, crossfaded when
+## the mood changes. Quiet by default. Use: `amb.manager = m; amb.add_set_dir(dir); amb.set_mood(&"cave")`.
+## Driven by [method advance] (a test steps time without frames), placed through the manager, config read live.
 
 const CHANNEL := "audio.ambience"
 const ID_PREFIX := "ambience/"

@@ -1,16 +1,8 @@
 extends SceneTree
 
-## Headless level table for the Ambience bus at a game's defaults: every stock bed through
-## [DotAudioAmbience], every stock mood through [DotAmbience], each with the mixer's slider.
-##
-## [codeblock]
-## godot --headless --path . --script res://addons/dot_audio/tools/ambience_levels.gd -- [--bed-level=0.3] [--map-level=1.5] [--lively] [--detail]
-## [/codeblock]
-## Run from a game's root: its `res://game/*_ambience.gd` `make_rules()` supplies the server's
-## level and rate. File levels are decoded by ffmpeg (the engine's headless driver mixes nothing),
-## then the gain chain is applied, so a row is the bus level that chain gives, not a capture.
-## Exit 1 when a default layer is louder than [constant CEILING_RMS_DB] or a one-shot set fires
-## more than [constant CEILING_SHOTS_PER_MIN] times a minute.
+## Level table for the Ambience bus at a game's defaults, from a game's root:
+## `godot --headless --path . --script res://addons/dot_audio/tools/ambience_levels.gd -- [--bed-level=N] [--map-level=N] [--lively] [--detail]`.
+## Levels are decoded by ffmpeg, then the gain chain applied. Exit 1 over [constant CEILING_RMS_DB] or [constant CEILING_SHOTS_PER_MIN].
 
 ## Quietest a game's mix may push ambience: 13 dB under the -17 LUFS game standard.
 const CEILING_RMS_DB := -30.0
@@ -69,6 +61,28 @@ func _run(args: PackedStringArray) -> int:
 		print("  no stock mood set: %s" % made.error.message)
 		return 1
 	var moodset: DotAmbienceSet = made.value
+	var tally := _measure_moods(moodset, rules, cfg_volume, bus, detail)
+	var worst_mood: Dictionary = tally["worst"]
+	var busiest: Dictionary = tally["busiest"]
+	bad += int(tally["bad"])
+
+	print("  loudest bed   %-24s rms %6.1f  peak %6.1f dBFS" % [worst_bed.get("id", "-"), worst_bed["rms"], worst_bed.get("peak", -INF)])
+	print("  loudest mood  %-24s rms %6.1f  one-shot peak %6.1f dBFS" % [worst_mood.get("id", "-"), worst_mood["rms"], worst_mood.get("shot_peak", -INF)])
+	print("  busiest mood  %-24s %.2f one-shots/min (one every %.0f s)" % [busiest.get("id", "-"), busiest["per_min"], 60.0 / maxf(busiest["per_min"], 0.001)])
+	var over := PackedStringArray()
+	if worst_bed["rms"] > CEILING_RMS_DB:
+		over.append("bed rms over %.0f" % CEILING_RMS_DB)
+	if worst_mood["rms"] > CEILING_RMS_DB:
+		over.append("mood rms over %.0f" % CEILING_RMS_DB)
+	if busiest["per_min"] > CEILING_SHOTS_PER_MIN:
+		over.append("one-shots over %.0f/min" % CEILING_SHOTS_PER_MIN)
+	print("  verdict: %s" % ("QUIET" if over.is_empty() and bad == 0 else ", ".join(over) + (" (%d files missing)" % bad if bad > 0 else "")))
+	return 0 if over.is_empty() and bad == 0 else 1
+
+
+## Walks every stock mood: its beds' summed power and its one-shot rate and peak.
+func _measure_moods(moodset: DotAmbienceSet, rules: DotAmbienceRules, cfg_volume: float, bus: float, detail: bool) -> Dictionary:
+	var bad := 0
 	var worst_mood := {"rms": -INF}
 	var busiest := {"per_min": -1.0}
 	for mood_name: String in moodset.names():
@@ -99,19 +113,7 @@ func _run(args: PackedStringArray) -> int:
 			worst_mood = row
 		if per_min > busiest["per_min"]:
 			busiest = row
-
-	print("  loudest bed   %-24s rms %6.1f  peak %6.1f dBFS" % [worst_bed.get("id", "-"), worst_bed["rms"], worst_bed.get("peak", -INF)])
-	print("  loudest mood  %-24s rms %6.1f  one-shot peak %6.1f dBFS" % [worst_mood.get("id", "-"), worst_mood["rms"], worst_mood.get("shot_peak", -INF)])
-	print("  busiest mood  %-24s %.2f one-shots/min (one every %.0f s)" % [busiest.get("id", "-"), busiest["per_min"], 60.0 / maxf(busiest["per_min"], 0.001)])
-	var over := PackedStringArray()
-	if worst_bed["rms"] > CEILING_RMS_DB:
-		over.append("bed rms over %.0f" % CEILING_RMS_DB)
-	if worst_mood["rms"] > CEILING_RMS_DB:
-		over.append("mood rms over %.0f" % CEILING_RMS_DB)
-	if busiest["per_min"] > CEILING_SHOTS_PER_MIN:
-		over.append("one-shots over %.0f/min" % CEILING_SHOTS_PER_MIN)
-	print("  verdict: %s" % ("QUIET" if over.is_empty() and bad == 0 else ", ".join(over) + (" (%d files missing)" % bad if bad > 0 else "")))
-	return 0 if over.is_empty() and bad == 0 else 1
+	return {"worst": worst_mood, "busiest": busiest, "bad": bad}
 
 
 ## The game's server defaults: the first `res://game/*_ambience.gd` with a static `make_rules()`.

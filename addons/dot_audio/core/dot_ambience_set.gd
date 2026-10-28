@@ -3,14 +3,7 @@ extends RefCounted
 
 ## A sound set: moods read from a directory. `moods.json` is the document; a directory with
 ## none is read by folder (each subfolder a mood, see [method DotAmbienceMood.from_folder]).
-##
-## [codeblock]
-## {"format": 1, "moods": {"cave_tunnel": {
-##   "volume": 1.0,
-##   "beds": [{"file": "cave/drone.ogg", "volume": 0.8}],
-##   "oneshots": [{"files": ["cave/drip.ogg"], "interval": [20, 60], "volume": 0.5,
-##                 "pitch": [0.9, 1.1], "distance": [4, 25]}]}}}
-## [/codeblock]
+## Format: `{"format": 1, "moods": {name: {"volume", "beds": [...], "oneshots": [...]}}}`.
 
 const CHANNEL := "audio.ambience"
 const FILE := "moods.json"

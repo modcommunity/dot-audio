@@ -1,22 +1,9 @@
 class_name DotAmbienceDirector
 extends Node
 
-## The glue every game repeats around [DotAmbience]: build it over the family's stock mood set,
-## pick a map's mood (its document's `"ambient"`, the game's table, a name-prefix table, a vote
-## over its sound names, else the default), follow the roof, and follow the server's
-## [DotAmbienceRules] and the player's settings. A game sets the tables and calls the hooks.
-##
-## [codeblock]
-## var amb := DotAmbienceDirector.new()
-## amb.manager = audio
-## amb.default_mood = &"industrial"
-## amb.prefix_moods = {"surf_": &"snow_wind"}
-## add_child(amb)
-## amb.setup()                            # the stock moods, plus add_set_dir() of your own
-## amb.on_map(map_id, map_doc)            # each map; on_world_sounds() when its sounds arrive
-## amb.follow_roof(delta, eye, space, mask)   # each frame, optional
-## amb.follow_settings(settings, rules)   # keys `ambient`, `ambient_volume`, `ambient_frequency`
-## [/codeblock]
+## The glue every game repeats around [DotAmbience]: build it over the stock mood set, pick a map's mood
+## (document, game table, name prefix, vote over sound names, else default), follow the roof and the
+## rules and settings. Set `manager`, `default_mood`, `prefix_moods`, call `setup()`, then the `on_map` hooks.
 
 const CHANNEL := "audio.ambience.director"
 

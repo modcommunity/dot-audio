@@ -1,9 +1,7 @@
 extends Control
 
-## Ear-check for the stock `slide_*` loops. Open it with `godot --path . res://tools/sound_compare.tscn`:
-## one row per loop, one button per speed (pitch and level as DotAudioSlide applies them), and Play all.
-## `--headless --path . res://tools/sound_compare.tscn -- --levels` prints each loop's peak and RMS
-## (dBFS, decoded by ffmpeg) plus the level at each speed, then quits; exit 1 if a loop is missing.
+## Ear-check for the stock `slide_*` loops: `godot --path . res://tools/sound_compare.tscn` shows a row per loop
+## and a button per speed. With `-- --levels` (headless) it prints each loop's peak and RMS, then quits; exit 1 if a loop is missing.
 
 const SPEEDS: Array[float] = [2.0, 5.0, 9.0, 14.0]
 const SECONDS_PER_STEP := 2.5

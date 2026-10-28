@@ -1,10 +1,9 @@
 class_name DotBoxSounds
 extends RefCounted
 
-## Per-event sounds for a box (a pickup that is opened for a random outcome): spawn, approach, open, reward, deny and the end of a timed effect.
-##
-## A box's `sounds` profile key maps an event to a slot `{sound, volume, pitch_jitter, max_distance, unit_size, mode, enabled}`. An empty slot
-## plays the stock sound of that event. Every fired event emits [signal event_fired], heard or not, so other addons can hook it.
+## Per-event sounds for a box (spawn, approach, open, reward, deny, effect end).
+## A `sounds` profile key maps an event to a slot `{sound, volume, pitch_jitter, max_distance, unit_size, mode, enabled}`;
+## an empty slot plays the stock sound. Every fired event emits [signal event_fired], heard or not.
 
 const EVENTS: Array[StringName] = [&"spawn", &"approach", &"open", &"reward", &"deny", &"effect_end"]
 const MODES: Array[String] = ["3d", "ui"]

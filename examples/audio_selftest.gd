@@ -12,8 +12,8 @@ extends "selftest/selftest_ambience.gd"
 ## godot --headless --path . res://examples/audio_selftest.tscn
 ## [/codeblock]
 
-const SECTIONS := 17
-const CHECKS := 253
+const SECTIONS := 18
+const CHECKS := 255
 
 func _ready() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
@@ -31,6 +31,7 @@ func _run() -> void:
 	_test_catalogue()
 	_test_mixer_curve()
 	await _test_limits()
+	await _test_fade_timer()
 	_test_stealing()
 	_test_music_and_ducking()
 	_test_synth()
@@ -318,6 +319,26 @@ func _test_limits() -> void:
 	m.queue_free()
 
 # --- 6 ----------------------------------------------------------------------
+
+func _test_fade_timer() -> void:
+	_section("A fade finishes its voice, and a freed manager is not called back")
+
+	var m := _manager(_catalogue(), 4)
+	m.sink = DotAudioSinkGodot.new(m, 4)
+	m._playing[7] = &"rifle"
+	m._fade_out(7, 0.05)
+	_check(m._playing.has(7), "the voice is held while it fades")
+	await get_tree().create_timer(0.3).timeout
+	_check(not m._playing.has(7), "and released when the fade ends")
+
+	var gone := _manager(_catalogue(), 4)
+	gone.sink = DotAudioSinkGodot.new(gone, 4)
+	gone._playing[8] = &"rifle"
+	gone._fade_out(8, 0.05)
+	gone.free()
+	await get_tree().create_timer(0.3).timeout
+	m.queue_free()
+
 
 func _test_stealing() -> void:
 	_section("A full pool steals downwards, or refuses")

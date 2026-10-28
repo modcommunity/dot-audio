@@ -453,11 +453,13 @@ func _fade_out(handle: int, seconds: float) -> void:
 		_release(handle)
 		return
 	_ramp(handle, 0.0, -40.0, seconds)
-	var h := handle
-	get_tree().create_timer(seconds).timeout.connect(func() -> void:
-		sink.stop(h)
-		_release(h)
-	)
+	# A method Callable, not a lambda: the engine drops it if this node is freed first.
+	get_tree().create_timer(seconds).timeout.connect(_finish_fade.bind(handle))
+
+
+func _finish_fade(handle: int) -> void:
+	sink.stop(handle)
+	_release(handle)
 
 
 func _ramp(_handle: int, _from_db: float, _to_db: float, _seconds: float) -> void:

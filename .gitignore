@@ -17,3 +17,6 @@ Thumbs.db
 
 # Editors
 .vscode/
+
+# Raw candidate source audio (hundreds of MB of WAVs), kept local while sounds are picked.
+/source-candidates/

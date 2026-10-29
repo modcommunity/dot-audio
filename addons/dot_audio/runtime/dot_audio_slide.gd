@@ -53,11 +53,15 @@ func keep(bodies: Array, sliding_of: Callable) -> void:
 		if is_instance_valid(b):
 			untrack(b)
 		else:
-			# Freed since last frame: a typed untrack(Node3D) cannot take it.
-			var st: Dictionary = _bodies[b]
-			if manager != null and int(st.get("handle", 0)) != 0:
-				manager.stop(int(st["handle"]))
-			_bodies.erase(b)
+			_drop_freed(b)
+
+
+## A freed owner can't ride the typed [signal slide_stopped], so its loop stops and no signal fires.
+func _drop_freed(body: Variant) -> void:
+	var st: Dictionary = _bodies.get(body, {})
+	if manager != null and int(st.get("handle", 0)) != 0:
+		manager.stop(int(st["handle"]))
+	_bodies.erase(body)
 
 
 func untrack(body: Node3D) -> void:
@@ -75,7 +79,10 @@ func _physics_process(delta: float) -> void:
 	if manager == null:
 		manager = DotRegistry.get_node_service(DotAudioManager.SERVICE) as DotAudioManager
 	for body: Variant in _bodies.keys():
-		if not is_instance_valid(body) or not (body as Node3D).is_inside_tree():
+		if not is_instance_valid(body):
+			_drop_freed(body)
+			continue
+		if not (body as Node3D).is_inside_tree():
 			_bodies.erase(body)
 			continue
 		advance(body, delta)

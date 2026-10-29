@@ -275,6 +275,24 @@ func _test_slide() -> void:
 	gone.free()
 	slide.keep([], func(_b: Node3D) -> bool: return false)
 	_check(slide.describe()["bodies"] == 0, "keep drops a body freed since the last frame")
+	_check_freed_slide(m, slide)
+
+
+func _check_freed_slide(m: DotAudioManager, slide: DotAudioSlide) -> void:
+	var doomed := Node3D.new()
+	add_child(doomed)
+	slide.track(doomed, func() -> bool: return true, {"surface": &"metal"})
+	for i in 5:
+		doomed.global_position += Vector3(8.0 / 60.0, 0, 0)
+		slide.advance(doomed, 1.0 / 60.0)
+	var handle := int(slide._bodies[doomed]["handle"])
+	var catcher := _ErrorCatcher.new()
+	OS.add_logger(catcher)
+	doomed.free()
+	slide._physics_process(1.0 / 60.0)
+	OS.remove_logger(catcher)
+	_check(handle != 0 and not m.is_playing(handle), "a body freed mid-slide stops its loop")
+	_check(slide.describe()["bodies"] == 0 and catcher.errors.is_empty(), "and drops silently, no engine error " + str(catcher.errors))
 
 
 func _test_raw_fallback() -> void:
@@ -327,3 +345,13 @@ func _test_nothing_kept_alive_at_exit() -> void:
 	_check(not kept, "and leaves nothing in use at exit%s" % (
 		"" if not kept else ": " + " | ".join(Array(text.split("\n")).filter(
 			func(l: String) -> bool: return l.contains("at exit")))))
+
+
+## An unguarded freed instance can return plausible values, so only the engine error shows it.
+class _ErrorCatcher extends Logger:
+	var errors: Array[String] = []
+
+	func _log_error(function: String, _file: String, _line: int, code: String,
+			rationale: String, _editor_notify: bool, _error_type: int,
+			_script_backtraces: Array) -> void:
+		errors.append("%s %s %s" % [code, rationale, function])

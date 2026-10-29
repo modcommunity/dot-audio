@@ -277,6 +277,59 @@ EXTRA = {
 }
 
 
+def seq(parts, gap=0.12):
+    """Several arrays one after another with gap s of silence: single rounds going in one at a time."""
+    g = np.zeros(int(gap * RATE), dtype=np.float32)
+    out = []
+    for i, a in enumerate(parts):
+        out += [a] if i == 0 else [g, a]
+    return np.concatenate(out)
+
+
+def cut(rel, a, b, semis=0):
+    """Seconds a..b of one file as an array (b None: to the end)."""
+    return lambda src: pitch(load(os.path.join(src, rel))[int(a * RATE):None if b is None else int(b * RATE)].copy(), semis)
+
+
+def variants(*makers):
+    """Maker for a list of per-variant callables src -> array."""
+    return lambda src: [m(src) for m in makers]
+
+
+def rounds(order, semis, gap):
+    """Single rounds (BMacZero's clips) in the given order, pitched, one after the other."""
+    def go(src):
+        r2 = os.path.join(src, "reloads2")
+        parts = [pitch(load(os.path.join(r2, n + ".wav")), semis) for n in order]
+        return seq([trim_ends(x) for x in parts], gap)
+    return go
+
+
+A = "reloads/assaultriflereload1_0.wav"
+G1 = "reloads/gunreload1.wav"
+G11 = "reloads/gun_reload.1.ogg"
+G12 = "reloads/gun_reload.2.ogg"
+COCK = "reloads/shotguncock_0.wav"
+HG = "reloads2/reload.wav"
+
+# Reloads by class, so two classes never share a file (DotWeaponSound.check_unique). `reload_out` and `reload_in` stay
+# as the generic fallback for a pack that does not know classes. Each set is a different recording where the sources
+# allow (pistol, SMG, rifle, heavy are four clips); the revolver and bolt rifle are built from single rounds and a
+# cocking click, because no recording of a speedloader or bolt was found under a free licence.
+RELOADS = {
+    "light": (variants(cut(HG, 0.0, 0.58), cut(HG, 0.0, 0.58, 1.5)), variants(cut(HG, 0.58, None), cut(HG, 0.58, None, 1.5))),
+    "smg": (variants(cut(G11, 0.0, 0.45, 1.0), cut(G11, 0.0, 0.45, 2.5)), variants(cut(G11, 0.45, None, 1.0), cut(G11, 0.45, None, 2.5))),
+    "rifle": (variants(cut(A, 0.0, 0.95), cut(G1, 0.0, 1.2, -1.0)), variants(cut(A, 0.95, None), cut(G1, 1.2, None, -1.0))),
+    "heavy": (variants(cut(G12, 0.0, 0.6, -3.0), cut(G12, 0.0, 0.6, -5.0)), variants(cut(G12, 0.6, None, -3.0), cut(G12, 0.6, None, -5.0))),
+    "magnum": (variants(cut(COCK, 0.0, 0.2, 5.0), cut(COCK, 0.0, 0.2, 7.0)),
+               variants(rounds(["singlebullet1", "clipload1", "clipload2"], 0, 0.14),
+                        rounds(["clipload2", "singlebullet1", "clipload1"], 1, 0.11))),
+    "sniper": (variants(cut(COCK, 0.0, 0.47, -3.0), cut(COCK, 0.0, 0.47, -5.0)),
+               variants(lambda src: np.concatenate([rounds(["singlebullet1", "clipload1"], -2, 0.2)(src), np.zeros(int(0.2 * RATE), np.float32), cut(COCK, 0.17, 0.47, -3.0)(src)]),
+                        lambda src: np.concatenate([rounds(["clipload2", "singlebullet1"], -3, 0.25)(src), np.zeros(int(0.25 * RATE), np.float32), cut(COCK, 0.17, 0.47, -5.0)(src)]))),
+}
+
+
 def write(name, arrays, peak_db, max_variants):
     os.makedirs(OUT, exist_ok=True)
     for old in glob.glob(os.path.join(OUT, name + "_*.ogg")):
@@ -312,6 +365,11 @@ def main():
         cap = FAR_VARIANTS if name.endswith("_far") else MAX_VARIANTS
         n = write(name, maker(src), peak, cap)
         print("  %-14s %d variants" % (name, n))
+    for cls, (outs, ins) in RELOADS.items():
+        for stage, maker, peak in (("out", outs, -8.0), ("in", ins, -7.0)):
+            name = "reload_%s_%s" % (stage, cls)
+            if not want or name in want:
+                print("  %-18s %d variants" % (name, write(name, maker(src), peak, 4)))
     for name, (peak, maker, cap) in EXTRA.items():
         if want and name not in want:
             continue

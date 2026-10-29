@@ -16,12 +16,17 @@ const COUNTS := {
 	&"magnum_far": 2, &"magnum_fire": 4, &"melee_flesh": 5, &"melee_metal": 5, &"minigun_fire": 5,
 	&"rack": 2, &"reload_in": 4, &"reload_out": 4, &"reload_shell": 4, &"rifle_far": 2, &"rifle_fire": 5,
 	&"shotgun_far": 1, &"shotgun_fire": 5, &"smg_far": 2, &"smg_fire": 4, &"sniper_far": 2,
-	&"sniper_fire": 5, &"pin_pull": 3, &"suppressed_fire": 4, &"swing": 5, &"swing_heavy": 5, &"throw": 5,
+	&"sniper_fire": 5, &"pin_pull": 3,
+	&"reload_in_heavy": 2, &"reload_out_heavy": 2, &"reload_in_light": 2, &"reload_out_light": 2,
+	&"reload_in_magnum": 2, &"reload_out_magnum": 2, &"reload_in_rifle": 2, &"reload_out_rifle": 2,
+	&"reload_in_smg": 2, &"reload_out_smg": 2, &"reload_in_sniper": 2, &"reload_out_sniper": 2,
+	&"suppressed_fire": 4, &"swing": 5, &"swing_heavy": 5, &"throw": 5,
 }
 
 ## Mix level in dB for the sounds that are not at 0: files are peak-levelled per class, this
 ## trims the quiet ones under the shots.
 const _GAIN := {&"casing": -6.0, &"dry": -4.0, &"reload_in": -2.0, &"reload_out": -2.0, &"throw": -3.0}
+const _RELOAD_GAIN := -2.0
 
 
 static func directory() -> String:
@@ -45,7 +50,7 @@ static func defs() -> Array[DotAudioDef]:
 			variants.append(dir.path_join("%s_%d.ogg" % [sound, i]))
 		d.path = variants[0]
 		d.variants = variants
-		d.gain_db = float(_GAIN.get(sound, 0.0))
+		d.gain_db = _RELOAD_GAIN if String(sound).begins_with("reload_in_") or String(sound).begins_with("reload_out_") else float(_GAIN.get(sound, 0.0))
 		d.pitch_min = 0.96
 		d.pitch_max = 1.04
 		var s := String(sound)

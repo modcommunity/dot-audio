@@ -1,6 +1,6 @@
 # Weapon sounds
 
-The stock weapon sounds in `addons/dot_audio/stock/weapons/` (42 sounds, 177 files), what each weapon pack played before, and what it plays now. Sources, authors and licences are in [stock/CREDITS.md](../addons/dot_audio/stock/CREDITS.md). Built by `tools/make_weapon_stock.py` from the downloads listed there; never edit an `.ogg` by hand.
+The stock weapon sounds in `addons/dot_audio/stock/weapons/` (54 sounds, 201 files), what each weapon pack played before, and what it plays now. Sources, authors and licences are in [stock/CREDITS.md](../addons/dot_audio/stock/CREDITS.md). Built by `tools/make_weapon_stock.py` from the downloads listed there; never edit an `.ogg` by hand.
 
 ## Audit (2026-10-27, before this change)
 
@@ -92,5 +92,5 @@ Files are `<name>_<i>.ogg` in `stock/weapons/`; a pack's selftest runs `DotWeapo
 
 Changed 2026-10-28: the heavy class is no longer lever-action: AK-47 and SKS single rounds pitched down 3 semitones, the 1917 (.30-06) and the .300 Blackout, 1.2 s tails, plus a thump (`heavy_fire` 1.44 s, `heavy_far` 1.41 and 1.67 s). The sniper class lost the 1917 so the two differ (Mosin, Tikka, Arisaka; `sniper_fire` 1.61 s). `pin_pull` (3 variants) is built from the CC0 equipment-click sheet pitched up 3 semitones and is a constructed sound, not a recording; zz-modern plays it when a throwable is drawn. Nothing was heard by a person.
 
-Still open: per-class reload sets (all guns share `reload_out/in`; the CC0 clip loads by BMacZero and the handgun reload by zer0_sol are downloaded but not yet cut in), a real recorded pin pull, and the explosion for the grenade is the shared `explosion`.
+Per-class reloads: `reload_out/in_<light|smg|rifle|heavy|magnum|sniper>` (2 each), picked by `DotWeaponSound.pick_reload`; the generic `reload_out/in` is the fallback. The two variants of a class are pitch variants of one recording, and the magnum and sniper sets are constructed from the bolt and cock clips, not recorded. Still open: a real recorded revolver and bolt reload, a real recorded pin pull, and the explosion for the grenade is the shared `explosion`.
 

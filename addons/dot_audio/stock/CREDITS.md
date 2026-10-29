@@ -51,7 +51,7 @@ Slices of CC0 recordings, cut, pitched, layered with a synthesised sub-bass thum
 | Gun reload sounds | Joaken, SpringySpringo | https://opengameart.org/content/gun-reload-sounds | `reload_*`, `equip` |
 | 2 Gun Reloads | StarNinjas | https://opengameart.org/content/2-gun-reloads | `reload_*` |
 | Shotgun Reload Sound effects | zer0sol | https://opengameart.org/content/shotgun-reload-sound-effects | `reload_shell`, `rack` |
-| equipment clicks III | LFA | https://opengameart.org/content/equipment-clicks-iii | `dry` |
+| equipment clicks III | LFA | https://opengameart.org/content/equipment-clicks-iii | `dry`, `pin_pull` (pitched up 3 semitones) |
 | Impact Sounds 1.0 | Kenney | https://kenney.nl/assets/impact-sounds | `bash`, `impact*`, `melee_*`, `casing` |
 | Sci-fi Sounds 1.0 | Kenney | https://kenney.nl/assets/sci-fi-sounds | `beam_fire`, `charge_fire`, `explosion` layer |
 

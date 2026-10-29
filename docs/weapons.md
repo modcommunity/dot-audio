@@ -60,4 +60,37 @@ Every class below has 2 to 5 real variants, picked at random per shot, with a pi
 - Indoor and outdoor tails (a reverb choice at the shot) are not separate files.
 - g2gfast plays its weapon sounds where the combat layer runs (offline, listen server); a remote client online is not told of other players' shots by any message, so it hears none.
 
-Variants cut short by their source recording (0.2 s clips among 1.6 s ones: sniper_fire 2 and 3, sniper_far 1, light_far 0, shotgun_far 0, smg_fire 4) were dropped 2026-10-28 and `make_weapon_stock.py` now drops any variant under 65% of its class's median length. Not yet replaced: the heavy class (marksman, battle rifle, LMG) is built from lever-action recordings, and the thrown class has a swing but no pin pull.
+## Audit table (2026-10-28): weapon, class, files
+
+Files are `<name>_<i>.ogg` in `stock/weapons/`; a pack's selftest runs `DotWeaponSound.check_classes` (fire length within `BOUNDS`, `reload_out` or `reload_shell`, `dry`) and `check_unique` (no shared recording) for its own table. zee, zz-modern and zed check every gun; zz-medieval checks that each cue has stock files.
+
+| Pack | Weapons | Class | Fire / far | Reload, dry, draw |
+| --- | --- | --- | --- | --- |
+| zee (Arena) | pistol | light | `light_fire`, `light_far` (1911, PPQ, Bersa) | `reload_out/in`, `dry`, `equip` |
+| zee | revolver, derringer | magnum | `magnum_fire`, `magnum_far` (.38, .45 down 4 st) | same |
+| zee | machine_pistol, smg | smg | `smg_fire`, `smg_far` (M45, PPSh) | same |
+| zee | carbine, rifle, bullpup, burst_rifle | rifle | `rifle_fire`, `rifle_far` (AR-15, SKS, AK-47) | same |
+| zee | battle_rifle, marksman | heavy | `heavy_fire`, `heavy_far` (AK-47 and SKS down 3 st, 1917, .300 Blackout) | same |
+| zee | sniper | sniper | `sniper_fire`, `sniper_far` (Mosin, Tikka, Arisaka) | same |
+| zee | shotgun, drum_shotgun | shotgun | `shotgun_fire`, `shotgun_far` | `reload_shell`, `rack`, `dry` |
+| zee | minigun, launcher, beamer, charge_rifle | minigun, launcher, beam, charge | `minigun_fire`, `launcher_fire` + `explosion`, `beam_fire`, `charge_fire` | none |
+| zee | melee, grenades | swing, throw by outcome | `swing`, `throw`, `pin_pull` is zz only | none |
+| zz-modern (Zombie Zone) | glock, pistol | light | as zee light | as zee |
+| zz-modern | deagle, revolver | magnum | as zee magnum | as zee |
+| zz-modern | mp5, p90, smg | smg | as zee smg | as zee |
+| zz-modern | ak, m4, scar | rifle | as zee rifle | as zee |
+| zz-modern | bren, lmg, dmr | heavy | as zee heavy | as zee |
+| zz-modern | hunting, sniper, vss | sniper | as zee sniper | as zee |
+| zz-modern | aa12, spas, shotgun | shotgun | as zee shotgun | `reload_shell` |
+| zz-modern | m79, rpg | launcher | `launcher_fire`, `explosion` | none |
+| zz-modern | frag | throw | `throw` | `pin_pull` on draw |
+| zz-modern | axe, machete, knife; bat, crowbar, sledge | swing (axe `swing_heavy`), bash | `swing`, `bash` | `draw_blade` for blades |
+| zed | service_pistol; uzi; pump_shotgun, sawed_off; hunting_rifle; assault_carbine, ak_rifle; machine_gun; grenade_launcher, rocket_launcher; flamethrower | light; smg; shotgun; sniper; rifle; heavy; launcher; minigun | as above | as above |
+| zed | silenced_pistol, tactical_smg | suppressed | `suppressed_fire` (derived from the pistol and rifle classes) | as above |
+| zed | molotov, pipe_bomb, bile_jar | no entry, default | | |
+| zz-medieval | sword, axe, mace, bow, crossbow | cues (`ZzMedievalSound.CUES`) | `swing`, `swing_heavy`, `bash`, `bow_fire`, `crossbow_fire`, `melee_*` | `draw_blade`, `bow_draw`, `crossbow_load` |
+
+Changed 2026-10-28: the heavy class is no longer lever-action: AK-47 and SKS single rounds pitched down 3 semitones, the 1917 (.30-06) and the .300 Blackout, 1.2 s tails, plus a thump (`heavy_fire` 1.44 s, `heavy_far` 1.41 and 1.67 s). The sniper class lost the 1917 so the two differ (Mosin, Tikka, Arisaka; `sniper_fire` 1.61 s). `pin_pull` (3 variants) is built from the CC0 equipment-click sheet pitched up 3 semitones and is a constructed sound, not a recording; zz-modern plays it when a throwable is drawn. Nothing was heard by a person.
+
+Still open: per-class reload sets (all guns share `reload_out/in`; the CC0 clip loads by BMacZero and the handgun reload by zer0_sol are downloaded but not yet cut in), a real recorded pin pull, and the explosion for the grenade is the shared `explosion`.
+

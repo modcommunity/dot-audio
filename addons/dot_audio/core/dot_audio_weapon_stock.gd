@@ -15,8 +15,8 @@ const COUNTS := {
 	&"impact_metal": 5, &"impact_wood": 5, &"launcher_fire": 5, &"light_far": 1, &"light_fire": 5,
 	&"magnum_far": 2, &"magnum_fire": 4, &"melee_flesh": 5, &"melee_metal": 5, &"minigun_fire": 5,
 	&"rack": 2, &"reload_in": 4, &"reload_out": 4, &"reload_shell": 4, &"rifle_far": 2, &"rifle_fire": 5,
-	&"shotgun_far": 1, &"shotgun_fire": 5, &"smg_far": 2, &"smg_fire": 4, &"sniper_far": 1,
-	&"sniper_fire": 3, &"suppressed_fire": 4, &"swing": 5, &"swing_heavy": 5, &"throw": 5,
+	&"shotgun_far": 1, &"shotgun_fire": 5, &"smg_far": 2, &"smg_fire": 4, &"sniper_far": 2,
+	&"sniper_fire": 5, &"pin_pull": 3, &"suppressed_fire": 4, &"swing": 5, &"swing_heavy": 5, &"throw": 5,
 }
 
 ## Mix level in dB for the sounds that are not at 0: files are peak-levelled per class, this

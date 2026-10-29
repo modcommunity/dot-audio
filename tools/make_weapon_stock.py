@@ -196,14 +196,14 @@ SPECS = {
     "rifle_fire": (-2.5, chain(firearm("AR-15", "D_32P.wav", 0.8), firearm("SKS", "U_14P.wav", 0.8),
                                firearm("AK-47", "C_28P.wav", 0.8))),
     "rifle_far": (-7.0, chain(firearm("AR-15", "D_24P.wav", 1.0), firearm("AK-47", "C_31P.wav", 1.0))),
-    # battle rifles and marksman rifles: lever actions and the .300 blackout, with a thump
-    "heavy_fire": (-1.5, layered(chain(firearm("Model 1894", "L_23P.wav", 1.0), firearm("Marlin 336", "I_22P.wav", 1.0),
-                                       firearm("Savage 10 .300 Blackout", "T_27P.wav", 1.0)),
-                                 (95, 40, 0.07, 0.35))),
-    "heavy_far": (-6.0, chain(firearm("Model 1894", "L_17P.wav", 1.2), firearm("Savage 10 .300 Blackout", "T_17P.wav", 1.2))),
+    # battle rifles, marksman rifles and light machine guns: full-power rifle rounds pitched down, with a thump
+    "heavy_fire": (-1.5, layered(chain(firearm("AK-47", "C_28P.wav", 1.2, semis=-3), firearm("SKS", "U_14P.wav", 1.2, semis=-3),
+                                       firearm("1917", "B_24P.wav", 1.2), firearm("Savage 10 .300 Blackout", "T_27P.wav", 1.2)),
+                                 (90, 38, 0.08, 0.4))),
+    "heavy_far": (-6.0, chain(firearm("1917", "B_16P.wav", 1.4), firearm("SKS", "U_19P.wav", 1.4, semis=-3))),
     # bolt-action rifles, a long tail
     "sniper_fire": (-1.5, layered(chain(firearm("Mosin Nagant", "M_21P.wav", 1.6), firearm("Tikka", "W_29P.wav", 1.6),
-                                        firearm("Arisaka", "E_25P.wav", 1.6), firearm("1917", "B_24P.wav", 1.6)),
+                                        firearm("Arisaka", "E_25P.wav", 1.6)),
                                   (80, 34, 0.1, 0.4))),
     "sniper_far": (-5.0, chain(firearm("Mosin Nagant", "M_26P.wav", 2.0), firearm("Tikka", "W_24P.wav", 2.0))),
     # shotguns: pump and bolt 12 gauge
@@ -272,6 +272,7 @@ EXTRA = {
     "rack": (-6.0, chain(whole_at("shotgun/Rack.mp3", 1.2), whole_at("shotgun/Shell in Chamber.mp3", 1.2)), 2),
     "equip": (-8.0, chain(whole_at("reloads/shotguncock_0.wav", 0.5), seg("reloads/gunreload1.wav", 1.2, 1.58),
                           seg("reloads/assaultriflereload1_0.wav", 0.95, 1.56)), 3),
+    "pin_pull": (-8.0, lambda src: [pitch(x, 3) for x in shots(os.path.join(src, "reloads/equipment_clicks3.wav"), 0.25, {2, 6, 9, 12}, rel=0.15, gap=0.08)], 4),
     "dry": (-10.0, lambda src: shots(os.path.join(src, "reloads/equipment_clicks3.wav"), 0.12, {1, 4, 8, 11, 14}, rel=0.15, gap=0.08), 5),
 }
 

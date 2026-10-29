@@ -12,11 +12,11 @@ const COUNTS := {
 	&"arrow_pass": 2, &"bash": 5, &"beam_fire": 5, &"bow_draw": 2, &"bow_fire": 5, &"casing": 5,
 	&"charge_fire": 5, &"crossbow_fire": 5, &"crossbow_load": 5, &"draw_blade": 4, &"dry": 5, &"equip": 3,
 	&"explosion": 5, &"heavy_far": 2, &"heavy_fire": 5, &"impact": 5, &"impact_flesh": 5,
-	&"impact_metal": 5, &"impact_wood": 5, &"launcher_fire": 5, &"light_far": 2, &"light_fire": 5,
+	&"impact_metal": 5, &"impact_wood": 5, &"launcher_fire": 5, &"light_far": 1, &"light_fire": 5,
 	&"magnum_far": 2, &"magnum_fire": 4, &"melee_flesh": 5, &"melee_metal": 5, &"minigun_fire": 5,
 	&"rack": 2, &"reload_in": 4, &"reload_out": 4, &"reload_shell": 4, &"rifle_far": 2, &"rifle_fire": 5,
-	&"shotgun_far": 2, &"shotgun_fire": 5, &"smg_far": 2, &"smg_fire": 5, &"sniper_far": 2,
-	&"sniper_fire": 5, &"suppressed_fire": 4, &"swing": 5, &"swing_heavy": 5, &"throw": 5,
+	&"shotgun_far": 1, &"shotgun_fire": 5, &"smg_far": 2, &"smg_fire": 4, &"sniper_far": 1,
+	&"sniper_fire": 3, &"suppressed_fire": 4, &"swing": 5, &"swing_heavy": 5, &"throw": 5,
 }
 
 ## Mix level in dB for the sounds that are not at 0: files are peak-levelled per class, this

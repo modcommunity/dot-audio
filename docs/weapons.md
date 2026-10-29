@@ -24,13 +24,13 @@ Every class below has 2 to 5 real variants, picked at random per shot, with a pi
 
 | Sound (`weapon_<name>`) | Variants | Peak dBFS | Used by |
 | --- | --- | --- | --- |
-| light_fire / light_far | 5 / 2 | -4 / -8 | pistols (zee pistol, zed service/silenced pistol, zz glock/pistol) |
-| smg_fire / smg_far | 5 / 2 | -5 / -9 | zee smg and machine pistol, zed uzi/tactical SMG, zz mp5/p90/smg |
+| light_fire / light_far | 5 / 1 | -4 / -8 | pistols (zee pistol, zed service/silenced pistol, zz glock/pistol) |
+| smg_fire / smg_far | 4 / 2 | -5 / -9 | zee smg and machine pistol, zed uzi/tactical SMG, zz mp5/p90/smg |
 | magnum_fire / magnum_far | 4 / 2 | -2.5 / -7 | revolvers, derringer, deagle |
 | rifle_fire / rifle_far | 5 / 2 | -2.5 / -7 | rifles, carbines, bullpups |
 | heavy_fire / heavy_far | 5 / 2 | -1.5 / -6 | battle rifles, marksman, machine guns |
-| sniper_fire / sniper_far | 5 / 2 | -1.5 / -5 | bolt rifles |
-| shotgun_fire / shotgun_far | 5 / 2 | -1.5 / -5 | pumps, drums, sawed-off |
+| sniper_fire / sniper_far | 3 / 1 | -1.5 / -5 | bolt rifles |
+| shotgun_fire / shotgun_far | 5 / 1 | -1.5 / -5 | pumps, drums, sawed-off |
 | minigun_fire | 5 | -8 | minigun, flamethrower |
 | suppressed_fire | 4 | -9 | zed's silenced pistol and tactical SMG; derived from `light_fire` by `tools/make_suppressed.py` |
 | launcher_fire, explosion | 5, 5 | -2, -1.5 | launchers; the blast (for the game's projectile) |
@@ -59,3 +59,5 @@ Every class below has 2 to 5 real variants, picked at random per shot, with a pi
 - Nothing was heard by a person: slices were chosen by onset detection and checked by peak, length and the suite, not by ear. Spot-check `dry` (cut from a sheet of equipment clicks), `impact_*` and the derived `suppressed_fire`.
 - Indoor and outdoor tails (a reverb choice at the shot) are not separate files.
 - g2gfast plays its weapon sounds where the combat layer runs (offline, listen server); a remote client online is not told of other players' shots by any message, so it hears none.
+
+Variants cut short by their source recording (0.2 s clips among 1.6 s ones: sniper_fire 2 and 3, sniper_far 1, light_far 0, shotgun_far 0, smg_fire 4) were dropped 2026-10-28 and `make_weapon_stock.py` now drops any variant under 65% of its class's median length. Not yet replaced: the heavy class (marksman, battle rifle, LMG) is built from lever-action recordings, and the thrown class has a swing but no pin pull.

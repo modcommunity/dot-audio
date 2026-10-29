@@ -281,6 +281,10 @@ def write(name, arrays, peak_db, max_variants):
     for old in glob.glob(os.path.join(OUT, name + "_*.ogg")):
         os.remove(old)
     arrays = [a for a in arrays if len(a) > int(0.03 * RATE)]
+    # A source clip cut short by its recording (a 0.2 s "tail" among 1.6 s ones) makes one variant of a class sound clipped.
+    if len(arrays) > 2:
+        med = float(np.median([len(a) for a in arrays]))
+        arrays = [a for a in arrays if len(a) >= 0.65 * med]
     if not arrays:
         print("  %-14s NO SOURCE" % name)
         return 0

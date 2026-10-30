@@ -12,8 +12,8 @@ extends "selftest/selftest_stock.gd"
 ## godot --headless --path . res://examples/audio_selftest.tscn
 ## [/codeblock]
 
-const SECTIONS := 18
-const CHECKS := 258
+const SECTIONS := 19
+const CHECKS := 272
 
 func _ready() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
@@ -39,6 +39,7 @@ func _run() -> void:
 	_test_stock()
 	_test_footsteps()
 	_test_slide()
+	_test_surf()
 	_test_ambience_and_loudness()
 	_test_creepy_ambience()
 	_test_ambience_director()

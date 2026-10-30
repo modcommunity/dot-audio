@@ -119,9 +119,9 @@ func advance(body: Node3D, delta: float) -> void:
 		st["handle"] = 0
 		if not restart:
 			slide_started.emit(body, surface)
-	var t := clampf((speed - quiet_speed) / maxf(full_speed - quiet_speed, 0.01), 0.0, 1.0)
-	var vol := t * volume * float(opts.get("loudness", 1.0))
-	var pitch := lerpf(1.0 - min_pitch_drop, 1.0, t) + 0.1 * maxf(speed / full_speed - 1.0, 0.0)
+	var shaped := _shape(speed, float(opts.get("loudness", 1.0)))
+	var vol: float = shaped.x
+	var pitch: float = shaped.y
 	if manager == null:
 		return
 	var h: int = int(st["handle"])
@@ -130,7 +130,18 @@ func advance(body: Node3D, delta: float) -> void:
 		return
 	if vol <= 0.0:
 		return
-	st["handle"] = manager.play_at(DotAudioStock.slide_id(surface), pos, vol, pitch)
+	st["handle"] = manager.play_at(_sound_for(surface), pos, vol, pitch)
+
+
+## The loop to play on [param surface]; a subclass swaps it.
+func _sound_for(surface: StringName) -> StringName:
+	return DotAudioStock.slide_id(surface)
+
+
+## (volume, pitch) at [param speed] m/s; a subclass swaps the curve.
+func _shape(speed: float, loudness: float) -> Vector2:
+	var t := clampf((speed - quiet_speed) / maxf(full_speed - quiet_speed, 0.01), 0.0, 1.0)
+	return Vector2(t * volume * loudness, lerpf(1.0 - min_pitch_drop, 1.0, t) + 0.1 * maxf(speed / full_speed - 1.0, 0.0))
 
 
 func _stop(body: Node3D) -> void:

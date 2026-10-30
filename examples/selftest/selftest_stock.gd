@@ -22,12 +22,12 @@ func _test_stock() -> void:
 	cat.add(mine)
 	var added := DotAudioStock.add_to(cat)
 	_check(
-		added == DotAudioStock.SURFACES.size() - 1 + DotAudioStock.BEDS.size() + DotAudioStock.slide_defs().size() + DotAudioStock.FLASHLIGHT_IDS.size() + DotAudioStock.LANDING_IDS.size() + DotAudioWeaponStock.COUNTS.size(),
+		added == DotAudioStock.SURFACES.size() - 1 + DotAudioStock.BEDS.size() + DotAudioStock.slide_defs().size() + DotAudioStock.surf_defs().size() + DotAudioStock.FLASHLIGHT_IDS.size() + DotAudioStock.LANDING_IDS.size() + DotAudioWeaponStock.COUNTS.size(),
 		"add_to adds every stock id the game has not defined (%d)" % added
 	)
 	_check(cat.find(&"footstep_wood").path == "res://fixtures/silent.wav", "and a game's own id wins")
 	_check(cat.validate().ok, "the stock defs validate")
-	_check(DotAudioStock.ids().all(func(i: StringName) -> bool: return cat.has(i)) and DotAudioStock.ids(false).size() == 27 and DotAudioStock.ids().size() == 27 + DotAudioWeaponStock.COUNTS.size(), "ids() names every one")
+	_check(DotAudioStock.ids().all(func(i: StringName) -> bool: return cat.has(i)) and DotAudioStock.ids(false).size() == 28 and DotAudioStock.ids().size() == 28 + DotAudioWeaponStock.COUNTS.size(), "ids() names every one")
 
 	# The armed half: a def naming a file nobody shipped passes validate() and is silent for
 	# ever. Every path and every variant must exist on disk.
@@ -293,6 +293,94 @@ func _check_freed_slide(m: DotAudioManager, slide: DotAudioSlide) -> void:
 	OS.remove_logger(catcher)
 	_check(handle != 0 and not m.is_playing(handle), "a body freed mid-slide stops its loop")
 	_check(slide.describe()["bodies"] == 0 and catcher.errors.is_empty(), "and drops silently, no engine error " + str(catcher.errors))
+
+
+class FakeSurf extends DotAudioSurfRules:
+	var on: bool = true
+
+	func is_surfing(_body: Node3D) -> bool:
+		return on
+
+
+func _test_surf() -> void:
+	_section("Surfing glides quietly, and makes no steps or landings")
+
+	var cat := DotAudioCatalogue.new()
+	DotAudioStock.add_to(cat)
+	var m := _manager(cat, 32)
+	var sink := m.sink as DotAudioSinkNull
+	var rules := FakeSurf.new()
+	var stock_def := DotAudioStock.surf_defs()
+	_check(stock_def.size() == 1 and stock_def[0].looping and DotAudioStock.ids().has(DotAudioStock.SURF_GLIDE_ID), "the glide is a stock looping def")
+	var stream := load(stock_def[0].path) as AudioStream
+	_check(stream != null and stream.get_length() > 1.0, "and its file loads")
+
+	_check(rules.apply_cvar("sv_surf_volume", "9") and is_equal_approx(rules.volume, 2.0), "a cvar sets its field, clamped to its range")
+	_check(not rules.apply_cvar("sv_surf_nope", "1") and not rules.apply_cvar("sv_surf_volume", "loud"), "an unknown or non-numeric cvar is refused")
+	_check(rules.apply_values({"quiet_speed": 6, "sv_surf_mute_steps": false, "pitch_high": "1.5"}) == 3 and rules.quiet_speed == 6.0 and not rules.mute_steps and rules.pitch_high == 1.5, "a profile hands over field names, cvar names, bools and strings")
+	rules = FakeSurf.new()
+	_check(rules.shape(rules.quiet_speed - 1.0).x == 0.0 and is_equal_approx(rules.shape(rules.full_speed).x, rules.volume) and rules.shape(30.0).y > rules.shape(10.0).y, "volume and pitch rise with speed, silent below the quiet speed")
+	_check(rules.is_ramp_normal(Vector3(0.7, 0.5, 0).normalized()) and not rules.is_ramp_normal(Vector3.UP) and not rules.is_ramp_normal(Vector3.RIGHT), "a ramp is steeper than walkable and not a wall")
+
+	var steps := DotAudioFootsteps.new()
+	steps.manager = m
+	steps.default_surface = &"grass"
+	add_child(steps)
+	steps.set_physics_process(false)
+	var glide := DotAudioSurf.new()
+	glide.manager = m
+	glide.rules = rules
+	add_child(glide)
+	glide.set_physics_process(false)
+	var body := Node3D.new()
+	add_child(body)
+	steps.track(body, {"grounded": func() -> bool: return true})
+	glide.keep_surfers([body])
+	glide.advance(body, 1.0 / 60.0)
+	steps.advance(body, 1.0 / 60.0)
+
+	steps.surf_rules = rules
+	for i in 120:
+		body.global_position += Vector3(14.0 / 60.0, 0, 0)
+		steps.advance(body, 1.0 / 60.0)
+		glide.advance(body, 1.0 / 60.0)
+	_check(sink.count_of(&"footstep_grass") == 0, "no step is heard on a ramp")
+	_check(sink.count_of(&"surf_glide") == 1 and glide.is_sliding(body), "one glide loop plays, not one a frame")
+	var h := int(glide._bodies[body]["handle"])
+	var mid := float(sink.voice(h).get("pitch", 0.0))
+	for i in 60:
+		body.global_position += Vector3(26.0 / 60.0, 0, 0)
+		glide.advance(body, 1.0 / 60.0)
+	_check(float(sink.voice(h).get("pitch", 0.0)) > mid and sink.count_of(&"surf_glide") == 1, "going faster raises the same loop's pitch")
+
+	rules.on = false
+	glide.advance(body, 1.0 / 60.0)
+	_check(not glide.is_sliding(body) and not m.is_playing(h), "leaving the ramp ends the glide")
+	body.global_position = Vector3.ZERO
+	steps.advance(body, 1.0 / 60.0)
+	for i in 60:
+		body.global_position += Vector3(4.0 / 60.0, 0, 0)
+		steps.advance(body, 1.0 / 60.0)
+	_check(sink.count_of(&"footstep_grass") > 0, "and walking steps again")
+
+	rules.on = true
+	rules.mute_steps = false
+	var before := sink.count_of(&"footstep_grass")
+	body.global_position = Vector3.ZERO
+	steps.advance(body, 1.0 / 60.0)
+	for i in 60:
+		body.global_position += Vector3(4.0 / 60.0, 0, 0)
+		steps.advance(body, 1.0 / 60.0)
+	_check(sink.count_of(&"footstep_grass") > before, "sv_surf_mute_steps 0 leaves the steps alone")
+	rules.enabled = false
+	glide.keep_surfers([body])
+	glide.advance(body, 1.0 / 60.0)
+	_check(not glide.is_sliding(body), "sv_surf_sounds 0 silences the glide")
+
+	body.queue_free()
+	glide.queue_free()
+	steps.queue_free()
+	m.queue_free()
 
 
 func _test_raw_fallback() -> void:

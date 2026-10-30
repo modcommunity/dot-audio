@@ -74,3 +74,7 @@ Seven looping slide scrapes (`slide_generic`, `slide_concrete`, `slide_metal`, `
 ## landing/
 
 `landing_light.ogg`, `landing_medium.ogg` and `landing_hard.ogg` are synthesised by `tools/make_landing_stock.py` (in the repository, not the addon) from fixed seeds: a falling sine body thump and low-passed noise, no recordings and no third-party samples. Dedicated to the public domain under CC0 1.0 by the dot-audio authors.
+
+## surf/
+
+`surf_glide.ogg` is synthesised by `tools/make_surf_stock.py` (in the repository, not the addon) from a fixed seed: band-shaped noise around 3 kHz with a slow shimmer, joined into a seamless loop, no recordings and no third-party samples. Dedicated to the public domain under CC0 1.0 by the dot-audio authors. The game plays it quieter and higher the faster a body surfs.

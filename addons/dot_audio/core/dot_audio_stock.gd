@@ -16,6 +16,9 @@ extends RefCounted
 const FOOTSTEP_PREFIX := "footstep_"
 const SLIDE_PREFIX := "slide_"
 
+## The quiet glide of a body surfing a ramp (`stock/surf/`), in place of footsteps and landings.
+const SURF_GLIDE_ID := &"surf_glide"
+
 ## The flashlight's switch click pair (`stock/flashlight/`).
 const FLASHLIGHT_IDS: Array[StringName] = [&"flashlight_on", &"flashlight_off"]
 
@@ -120,6 +123,23 @@ static func slide_defs() -> Array[DotAudioDef]:
 		d.tags = [&"slide"]
 		out.append(d)
 	return out
+
+
+## The surf glide loop: quiet, positional, looping.
+static func surf_defs() -> Array[DotAudioDef]:
+	var d := DotAudioDef.new()
+	d.id = SURF_GLIDE_ID
+	d.path = directory().path_join("surf").path_join("surf_glide.ogg")
+	d.kind = DotAudioDef.Kind.POSITIONAL_3D
+	d.bus = &"SFX"
+	d.looping = true
+	d.gain_db = 0.0
+	d.priority = 25
+	d.max_concurrent = 6
+	d.unit_size = 3.0
+	d.max_distance = 30.0
+	d.tags = [&"surf"]
+	return [d]
 
 
 static func footstep_defs() -> Array[DotAudioDef]:
@@ -233,6 +253,7 @@ static func ids(weapons: bool = true) -> Array[StringName]:
 		out.append(StringName(FOOTSTEP_PREFIX + String(s)))
 	for d in slide_defs():
 		out.append(d.id)
+	out.append(SURF_GLIDE_ID)
 	out.append_array(BEDS)
 	out.append_array(FLASHLIGHT_IDS)
 	out.append_array(LANDING_IDS)
@@ -247,7 +268,7 @@ static func ids(weapons: bool = true) -> Array[StringName]:
 ## takes the stock has them. Returns how many.
 static func add_to(catalogue: DotAudioCatalogue, weapons: bool = true) -> int:
 	var added := DotAudioWeaponStock.add_to(catalogue) if weapons else 0
-	for d in footstep_defs() + slide_defs() + ambience_defs() + flashlight_defs() + landing_defs():
+	for d in footstep_defs() + slide_defs() + surf_defs() + ambience_defs() + flashlight_defs() + landing_defs():
 		if catalogue.has(d.id):
 			continue
 		catalogue.add(d)

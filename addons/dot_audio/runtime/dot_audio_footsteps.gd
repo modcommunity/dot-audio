@@ -56,6 +56,9 @@ var surface_metas: Array[StringName] = [&"surface", &"dot_fps_surface"]
 @export_flags_3d_physics var ground_mask: int = 0xFFFFFFFF
 
 # body -> {last: Vector3, travelled: float, air: float, grounded: bool, surface: StringName, opts}
+## When set, a body on a surf ramp makes no steps or landings ([DotAudioSurf] plays its glide).
+var surf_rules: DotAudioSurfRules = null
+
 var _bodies: Dictionary = {}
 
 
@@ -121,6 +124,11 @@ func advance(body: Node3D, delta: float) -> void:
 	# A respawn or a correction is not a walk.
 	if moved > 4.0 or delta <= 0.0:
 		st["travelled"] = 0.0
+		return
+	if surf_rules != null and surf_rules.mute_steps and surf_rules.is_surfing(body):
+		st["travelled"] = 0.0
+		st["air"] = 0.0
+		st["grounded"] = true
 		return
 	var grounded := _grounded(body, st)
 	if not grounded:

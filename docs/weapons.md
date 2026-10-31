@@ -1,6 +1,6 @@
 # Weapon sounds
 
-The stock weapon sounds in `addons/dot_audio/stock/weapons/` (54 sounds, 201 files), what each weapon pack played before, and what it plays now. Sources, authors and licences are in [stock/CREDITS.md](../addons/dot_audio/stock/CREDITS.md). Built by `tools/make_weapon_stock.py` from the downloads listed there; never edit an `.ogg` by hand.
+The stock weapon sounds in `addons/dot_audio/stock/weapons/` (77 sounds, 262 files), what each weapon pack played before, and what it plays now. Sources, authors and licences are in [stock/CREDITS.md](../addons/dot_audio/stock/CREDITS.md). Built by `tools/make_weapon_stock.py` from the downloads listed there; never edit an `.ogg` by hand.
 
 ## Audit (2026-10-27, before this change)
 
@@ -20,7 +20,7 @@ Ranked by how many weapons share a class (the order fixed): rifle 9, melee swing
 
 ## Now
 
-Every class below has 2 to 5 real variants, picked at random per shot, with a pitch roll on top; guns also have 2 recordings from further away (`*_far`, mid-distance microphones) for a distant-shot path. Fire sounds are layers: a recorded shot, and for the heavy classes (magnum, heavy, sniper, shotgun, launcher) a synthesised sub-bass thump under it, because the recordings have no chest. Levels are set by peak per class so a sniper stays above a pistol (the PEAK_DB column); integrated loudness of a single shot is not a meaningful number (under 400 ms a meter reads nothing, and a long quiet tail drags a shot to about -26 LUFS), so the check is true peak: every file is at or under -1.5 dBFS, and the game's catalogue `gain_db` and the master limiter do the rest ([loudness](loudness.md)).
+Every class below has 2 to 5 real variants, picked at random per shot, with a pitch roll on top; guns also have 2 recordings from further away (`*_far`, mid-distance microphones) for a distant-shot path. Fire sounds are layers: a recorded shot, and for the heavy classes (magnum, heavy, sniper, shotgun, launcher) a synthesised sub-bass thump under it, because the recordings have no chest. Levels are set by peak per class so a sniper stays above a pistol (the PEAK_DB column); integrated loudness of a single shot is not a meaningful number (under 400 ms a meter reads nothing, and a long quiet tail drags a shot to about -26 LUFS), so the check is true peak: every file is under -0.8 dBFS sample peak (Vorbis overshoots the -1.5 target by up to 0.7 dB), and the game's catalogue `gain_db` and the master limiter do the rest ([loudness](loudness.md)).
 
 | Sound (`weapon_<name>`) | Variants | Peak dBFS | Used by |
 | --- | --- | --- | --- |
@@ -94,3 +94,5 @@ Changed 2026-10-28: the heavy class is no longer lever-action: AK-47 and SKS sin
 
 Per-class reloads: `reload_out/in_<light|smg|rifle|heavy|magnum|sniper>` (2 each), picked by `DotWeaponSound.pick_reload`; the generic `reload_out/in` is the fallback. The two variants of a class are pitch variants of one recording, and the magnum and sniper sets are constructed from the bolt and cock clips, not recorded. Still open: a real recorded revolver and bolt reload, a real recorded pin pull, and the explosion for the grenade is the shared `explosion`.
 
+
+Changed 2026-10-31: nine more fire classes so guns the arena pack made sound alike no longer do: `lmg`, `battle`, `marksman`, `carbine`, `derringer`, `mpistol`, `autoshot`, `grenade`, `rail`, plus new `beam_fire` and `charge_fire` recordings, per-class reloads `reload_out/in_<lmg|launcher|energy>` and a new sniper bolt, and `dry_<light|heavy|energy>` / `equip_<light|heavy|energy>` picked by `DotWeaponSound.pick_feel`. Measured with ffmpeg on the decoded files: every new fire file is within its `DotWeaponSound.BOUNDS` length and peaks between -0.9 and -6.7 dBFS (under the -0.5 clip check). Lengths: lmg 0.31-0.39 s, battle 1.21, marksman 1.38-1.39, carbine 0.54, derringer 0.42-0.53, mpistol 0.20-0.26, autoshot 1.08, grenade 0.26-0.42, rail 0.86-1.46, charge 0.80, beam 0.29-0.45. `autoshot_fire` has 2 variants and `carbine_fire` 3: their source recordings hold that many usable shots. Not done: `_far` recordings for the new classes. Nothing was heard by a person.

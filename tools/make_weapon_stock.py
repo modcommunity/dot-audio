@@ -175,6 +175,22 @@ S = "kenney-sci-fi-sounds/Audio"
 M1 = "medieval-1"
 M2 = "medieval-2"
 BANG = "bang-sfx"
+TAB = "tabasco/sounds"
+SHOTS = "chain/shots"
+LMG = "lmg/lmg_fire01.mp3"
+JC = "jc/SciFi Pack Vol 1/Single_SciFi Pack Vol 1_"
+
+
+def JCW(name):
+    return JC + name + ".wav"
+
+
+def clips(rel, starts, length, semis=0):
+    """One clip per start second of a file holding several shots with quiet between (onsets would merge a burst)."""
+    def go(src):
+        x = load(os.path.join(src, rel))
+        return [pitch(x[max(0, int((t - 0.008) * RATE)):int((t + length) * RATE)].copy(), semis) for t in starts]
+    return go
 
 # name -> (peak dBFS, maker). Near fire (the shot as the shooter hears it).
 SPECS = {
@@ -219,9 +235,25 @@ SPECS = {
     "explosion": (-1.5, mix_layers(
         oga(BANG + "/cannon_0[1-5].ogg", length=1.8, semis=-3),
         oga(S + "/lowFrequency_explosion_00[01].ogg", S + "/explosionCrunch_00[0-4].ogg", length=1.8, floor=0.01), 0.7)),
-    # energy weapons
-    "beam_fire": (-6.0, oga(S + "/laserSmall_00[0-4].ogg", length=0.45)),
-    "charge_fire": (-3.0, oga(S + "/laserLarge_00[0-4].ogg", length=1.0)),
+    # per-gun reports for the arena pack's guns that a shared class made sound alike
+    "battle_fire": (-2.0, layered(clips(TAB + "/sks.wav", [2.29, 6.0, 7.8, 9.8, 11.5], 1.2), (90, 38, 0.08, 0.35))),
+    "marksman_fire": (-2.0, layered(clips(TAB + "/cz.wav", [0.14, 2.82, 4.05, 5.54], 1.3, -1), (85, 36, 0.09, 0.3))),
+    "lmg_fire": (-2.5, layered(chain(clips(LMG, [0.0, 0.21], 0.28, -2), clips(TAB + "/sks.wav", [3.54, 3.76], 0.3, -4),
+                                     clips(TAB + "/mosin.wav", [2.67, 2.87], 0.3, -3)), (80, 34, 0.08, 0.5))),
+    "carbine_fire": (-3.0, clips(SHOTS + "/rifle.wav", [0.17, 0.37, 0.76], 0.6, 2)),
+    "derringer_fire": (-3.0, chain(clips(SHOTS + "/pistol.wav", [0.1], 0.55, 3), clips(SHOTS + "/pistol.wav", [0.1], 0.55, 5),
+                                   clips(SHOTS + "/pistol.wav", [0.1], 0.55, 1))),
+    "mpistol_fire": (-5.0, chain(clips(SHOTS + "/cg1.wav", [0.07], 0.25, 2), clips(SHOTS + "/cg1.wav", [0.07], 0.25, 4),
+                                 clips(SHOTS + "/cg1.wav", [0.07], 0.25, 0))),
+    "autoshot_fire": (-1.5, layered(clips(SHOTS + "/shotgun.wav", [0.05, 0.25, 0.76], 0.9, -3), (95, 36, 0.09, 0.45))),
+    "grenade_fire": (-3.0, layered(oga(BANG + "/cannon_0[1-5].ogg", length=0.7, semis=9), (110, 45, 0.07, 0.35))),
+    "rail_fire": (-2.0, layered(chain(oga("doomsday/short.wav", length=1.3, semis=-2),
+                                      oga(JC + "Energy Shot Charged_v1_0[12].wav", JC + "Energy Shot Charged_v2_02.wav",
+                                          length=1.3, semis=-4)), (70, 28, 0.14, 0.5))),
+    # energy weapons: a pulse train, and a charged plasma bolt
+    "beam_fire": (-6.0, chain(oga("alien/alien-blaster.wav", length=0.4), clips("burst/burst.mp3", [0.03, 0.25, 0.48], 0.2),
+                              oga("theremin/Zane's Theremin Lasers/Short/*.wav", length=0.45))),
+    "charge_fire": (-3.0, oga(JC + "Heavy Plasma Shot_0[1-4].wav", length=0.8)),
     # melee: blades and axes swung, the heavy and the light
     "swing": (-6.0, chain(oga(M2 + "/Dagger Swing.wav", M2 + "/Seax Swing.wav", M2 + "/Sabre Swing.wav",
                               M1 + "/Katana Swing.wav", length=0.7, mode="events"))),
@@ -261,6 +293,11 @@ def seg(rel, a, b, semis=0):
     return go
 
 
+def cut_a(rel, a, b, semis=0):
+    """cut() as a list-returning maker, for chain()."""
+    return lambda src: [cut(rel, a, b, semis)(src)]
+
+
 # The sound sets whose files are not slices of one gun: reloads, racks and clicks.
 EXTRA = {
     "reload_out": (-8.0, chain(seg("reloads/assaultriflereload1_0.wav", 0.0, 0.95), seg("reloads/gunreload1.wav", 0.0, 1.2),
@@ -272,6 +309,12 @@ EXTRA = {
     "rack": (-6.0, chain(whole_at("shotgun/Rack.mp3", 1.2), whole_at("shotgun/Shell in Chamber.mp3", 1.2)), 2),
     "equip": (-8.0, chain(whole_at("reloads/shotguncock_0.wav", 0.5), seg("reloads/gunreload1.wav", 1.2, 1.58),
                           seg("reloads/assaultriflereload1_0.wav", 0.95, 1.56)), 3),
+    "dry_light": (-10.0, lambda src: [pitch(x, 3) for x in shots(os.path.join(src, "reloads/equipment_clicks3.wav"), 0.1, {1, 4, 8}, rel=0.15, gap=0.08)], 3),
+    "dry_heavy": (-9.0, lambda src: [pitch(x, -4) for x in shots(os.path.join(src, "reloads/equipment_clicks3.wav"), 0.15, {11, 14, 8}, rel=0.15, gap=0.08)], 3),
+    "dry_energy": (-9.0, chain(cut_a(JCW("Energy Power Down_Short_var 1"), 0.0, 0.3), cut_a(JCW("Boost PowerDown_v1"), 0.0, 0.35)), 3),
+    "equip_light": (-8.0, chain(cut_a("reloads/shotguncock_0.wav", 0.0, 0.2, 3), cut_a("reloads/shotguncock_0.wav", 0.0, 0.2, 5)), 2),
+    "equip_heavy": (-7.0, chain(cut_a("shotgun/Rack.mp3", 0.0, 0.9, -3), cut_a("shotgun/Shell in Chamber.mp3", 0.0, 0.9, -3)), 2),
+    "equip_energy": (-8.0, chain(*[whole_at(JCW("PickUp_0%d" % i), 0.8) for i in (1, 2, 3)]), 3),
     "pin_pull": (-8.0, lambda src: [pitch(x, 3) for x in shots(os.path.join(src, "reloads/equipment_clicks3.wav"), 0.25, {2, 6, 9, 12}, rel=0.15, gap=0.08)], 4),
     "dry": (-10.0, lambda src: shots(os.path.join(src, "reloads/equipment_clicks3.wav"), 0.12, {1, 4, 8, 11, 14}, rel=0.15, gap=0.08), 5),
 }
@@ -311,6 +354,8 @@ G11 = "reloads/gun_reload.1.ogg"
 G12 = "reloads/gun_reload.2.ogg"
 COCK = "reloads/shotguncock_0.wav"
 HG = "reloads2/reload.wav"
+MOSIN = TAB + "/mosin.wav"
+
 
 # Reloads by class, so two classes never share a file (DotWeaponSound.check_unique). `reload_out` and `reload_in` stay
 # as the generic fallback for a pack that does not know classes. Each set is a different recording where the sources
@@ -324,8 +369,13 @@ RELOADS = {
     "magnum": (variants(cut(COCK, 0.0, 0.2, 5.0), cut(COCK, 0.0, 0.2, 7.0)),
                variants(rounds(["singlebullet1", "clipload1", "clipload2"], 0, 0.14),
                         rounds(["clipload2", "singlebullet1", "clipload1"], 1, 0.11))),
-    "sniper": (variants(cut(COCK, 0.0, 0.47, -3.0), cut(COCK, 0.0, 0.47, -5.0)),
-               variants(lambda src: np.concatenate([rounds(["singlebullet1", "clipload1"], -2, 0.2)(src), np.zeros(int(0.2 * RATE), np.float32), cut(COCK, 0.17, 0.47, -3.0)(src)]),
+    "lmg": (variants(cut(A, 0.0, 0.95, -4.0), cut(G1, 0.0, 1.2, -3.0)), variants(cut(A, 0.95, None, -4.0), cut(G1, 1.2, None, -3.0))),
+    "launcher": (variants(cut(G12, 0.0, 0.6, -7.0), cut(G12, 0.0, 0.6, -9.0)),
+                 variants(rounds(["clipload1", "singlebullet1"], -5, 0.2), rounds(["clipload2", "clipload1"], -6, 0.2))),
+    "energy": (variants(cut(JCW("Energy Power Down_Short_var 1"), 0.0, 0.6), cut(JCW("Overload Heat Release wOpen Close Mechanism"), 0.0, 0.9)),
+               variants(cut(JCW("Boost PowerUp_v1"), 0.0, 0.7), cut(JCW("PickUp_03"), 0.0, 0.8))),
+    "sniper": (variants(cut(MOSIN, 1.1, 2.3), cut(MOSIN, 3.9, 5.1), cut(COCK, 0.0, 0.47, -3.0)),
+               variants(cut(MOSIN, 2.3, 3.3), cut(MOSIN, 5.1, 6.0), lambda src: np.concatenate([rounds(["singlebullet1", "clipload1"], -2, 0.2)(src), np.zeros(int(0.2 * RATE), np.float32), cut(COCK, 0.17, 0.47, -3.0)(src)]),
                         lambda src: np.concatenate([rounds(["clipload2", "singlebullet1"], -3, 0.25)(src), np.zeros(int(0.25 * RATE), np.float32), cut(COCK, 0.17, 0.47, -5.0)(src)]))),
 }
 

@@ -41,7 +41,7 @@ The ambience mood set (`moods.json`): CC0 recordings from OpenGameArt, converted
 
 ## weapons/
 
-Slices of CC0 recordings, cut, pitched, layered with a synthesised sub-bass thump (heavy classes) and peak-levelled by `tools/make_weapon_stock.py`, written as mono Ogg Vorbis. Every source is CC0 1.0; attribution is not required and is given here.
+Slices of CC0 recordings, cut, pitched, layered with a synthesised sub-bass thump (heavy classes) and peak-levelled by `tools/make_weapon_stock.py`, written as mono Ogg Vorbis. Most sources are CC0 1.0 (attribution not required, given anyway); the rows marked CC-BY require the credit given here.
 
 | Source | Author | URL | Used for |
 | --- | --- | --- | --- |
@@ -55,7 +55,15 @@ Slices of CC0 recordings, cut, pitched, layered with a synthesised sub-bass thum
 | Handgun Reload Sound Effect (CC0) | zer0sol | https://opengameart.org/content/handgun-reload-sound-effect | `reload_out_light`, `reload_in_light` |
 | equipment clicks III | LFA | https://opengameart.org/content/equipment-clicks-iii | `dry`, `pin_pull` (pitched up 3 semitones) |
 | Impact Sounds 1.0 | Kenney | https://kenney.nl/assets/impact-sounds | `bash`, `impact*`, `melee_*`, `casing` |
-| Sci-fi Sounds 1.0 | Kenney | https://kenney.nl/assets/sci-fi-sounds | `beam_fire`, `charge_fire`, `explosion` layer |
+| Sci-fi Sounds 1.0 | Kenney | https://kenney.nl/assets/sci-fi-sounds | `explosion` layer |
+| Light Machine Gun (CC-BY 4.0) | KuraiWolf | https://opengameart.org/content/light-machine-gun | `lmg_fire` |
+| Gunshot Sounds (sks, mosin, cz; the page says CC0, the bundled text CC-BY 3.0, credited as CC-BY 3.0) | Tabasco, text by Vincent Sevedge | https://opengameart.org/content/gunshot-sounds | `battle_fire`, `marksman_fire`, `lmg_fire` layers, `reload_*_sniper` (bolt) |
+| Chaingun, pistol, rifle and shotgun shots (CC-BY 3.0) | Michel Baradari | http://apollo-music.de (hosted on opengameart.org; the pack's info.txt names the licence) | `carbine_fire`, `derringer_fire`, `mpistol_fire`, `autoshot_fire` |
+| Alien Blaster (CC0) | cyklon698 | https://opengameart.org/content/alien-blaster | `beam_fire` |
+| Laser weapon burst fire (CC0) | number99 | https://opengameart.org/content/laser-weapon-burst-fire | `beam_fire` |
+| Theremin Laser SFX (CC0) | Zane Little Music | https://opengameart.org/content/theremin-laser-sfx | `beam_fire` |
+| Doomsday Laser Cannon Sound Effect (CC0) | railkill | https://opengameart.org/content/doomsday-laser-cannon-sound-effect | `rail_fire` |
+| JC Sounds Sci-Fi Pack Vol 1 (CC-BY 4.0) | jc-sounds | https://opengameart.org/content/jc-sounds-sci-fi-pack-vol-1 | `charge_fire`, `rail_fire`, `*_energy` reloads, `dry_energy`, `equip_energy` |
 
 `suppressed_fire` is derived from the stock's own `light_fire` files by `tools/make_suppressed.py` (low-passed, softened, shortened, with a synthesised action clack), so it adds no source.
 

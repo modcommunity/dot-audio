@@ -89,7 +89,7 @@ Seven looping slide scrapes (`slide_generic`, `slide_concrete`, `slide_metal`, `
 
 ## shots/
 
-The layered shots (`attack`, `body`, `tail_*`, `far` per weapon class, plus `suppressed/`) are cut and processed by `tools/make_shot_layers.py` (in the repository, not the addon) from these CC0 recordings. The indoor tails are the same shot's late energy convolved with a room impulse response the script generates from seeded noise, so no third-party impulse response is involved.
+The layered shots (`attack`, `body`, `tail_*`, `far` per weapon class, plus `suppressed/`) are cut and processed by `tools/make_shot_layers.py` (in the repository, not the addon) from these CC0 recordings. The room tails (small, medium, large, hall) are the same shot convolved with a generated room (dense early reflections, a size-scaled comb, a noise decay), and the outdoor tail is the shot's late energy as two low-passed slap-back echoes; no further source is used.
 
 | Source | Author | URL | Licence | Used for |
 | --- | --- | --- | --- | --- |

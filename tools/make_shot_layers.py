@@ -4,9 +4,9 @@
     python3 -I tools/make_shot_layers.py [--extra DIR]   (DIR holds the downloads named in EXTRA)
 
 Per weapon class: `attack_N` (the crack), `body_N` (the report), `tail_<size>_N` for small, medium, large and hall (the
-same shot's late energy convolved with a synthetic room, so no impulse response of unclear licence is involved),
-`tail_outdoor_N` (the recording's own late part) and `far_N` (the shot as heard from far off). The three near layers are
-a complementary split of one recording (they sum back to it), which is why one tail replaces another instead of adding.
+same shot convolved with a synthetic room, so no impulse response of unclear licence is involved),
+`tail_outdoor_N` (almost no tail, a distant slap-back instead) and `far_N` (the shot as heard from far off). The three near layers are
+a complementary split of one recording (they sum back to it), which is why the tails crossfade (equal power) rather than add.
 Sources: the stock `<class>_fire_N` files (The Free Firearm Sound Library, CC0) plus the extra downloads in EXTRA.
 """
 import argparse
@@ -30,13 +30,24 @@ EXTRA = {
 }
 CLASSES = ["light", "smg", "magnum", "rifle", "heavy", "sniper", "shotgun"]
 MAX_VARIANTS = 6
-# tail class -> (RT60 s, damping low-pass Hz, level relative to the source's tail peak, pre-delay ms)
+# tail class -> (RT60 s, damping low-pass Hz, pre-delay ms, drive ms (how much of the shot excites the room), peak dB)
+# A tight room is excited by the bang alone and rings off in a tenth of a second, so its drive is short; a hall keeps
+# ringing on the shot's own long tail. The levels run the other way: the tighter the room, the closer the tail is to the
+# attack, and an open field has almost none (its energy is the slap-back below).
 ROOMS = {
-    "small": (0.22, 5500.0, 0.55, 3.0),
-    "medium": (0.55, 4200.0, 0.50, 9.0),
-    "large": (1.30, 3400.0, 0.45, 22.0),
-    "hall": (2.80, 2600.0, 0.42, 48.0),
+    "small": (0.13, 7000.0, 1.0, 110.0, -4.0),
+    "medium": (0.45, 5200.0, 7.0, 260.0, -9.0),
+    "large": (1.20, 3600.0, 22.0, 520.0, -11.0),
+    "hall": (2.70, 2600.0, 48.0, 1600.0, -12.5),
 }
+# class -> (reflection spacing range ms, reflection count, comb delay ms, comb feedback): flutter and colouration
+FLUTTER = {
+    "small": ((2.2, 5.5), 22, 3.4, 0.62),
+    "medium": ((6.0, 16.0), 9, 8.5, 0.28),
+    "large": ((14.0, 34.0), 5, 0.0, 0.0),
+    "hall": ((30.0, 70.0), 4, 0.0, 0.0),
+}
+OUTDOOR_DB = -17.0
 ATTACK_MS, BODY_MS = 45.0, 420.0
 
 
@@ -76,26 +87,64 @@ def split(x):
     return attack[: a_end + 1], body[: b_end + 1], late[b_end // 2:]
 
 
-def room_ir(rt60, damp, seed, pre_ms):
+def room_ir(room, seed):
+    rt60, damp, pre_ms, _drive, _db = ROOMS[room]
+    spacing, count, comb_ms, comb_g = FLUTTER[room]
     rng = np.random.default_rng(seed)
-    n = int(min(rt60 * 1.1, 3.2) * RATE)
+    n = int(min(rt60 * 1.15, 3.2) * RATE)
     t = np.arange(n) / RATE
-    ir = rng.standard_normal(n) * 10 ** (-3.0 * t / rt60)  # -60 dB at rt60
+    dense = rng.standard_normal(n) * 10 ** (-3.0 * t / rt60)  # -60 dB at rt60
+    dense *= ramp(n, int(0.5 * spacing[1] / 1000 * RATE), int(2.5 * spacing[1] / 1000 * RATE))  # the field builds up
+    ir = dense * (0.35 if room == "small" else 0.6)
+    # early reflections: discrete, decaying with the room, alternating in sign; the flutter of a small space
+    at = 0.0
+    for _ in range(count):
+        at += rng.uniform(*spacing) / 1000.0
+        k = int(at * RATE)
+        if k < n:
+            ir[k] += rng.choice([-1.0, 1.0]) * rng.uniform(0.7, 1.0) * 10 ** (-3.0 * at / rt60) * 1.6
+    if comb_ms > 0.0:
+        d = int(comb_ms / 1000 * RATE)
+        den = np.zeros(d + 1)
+        den[0], den[d] = 1.0, -comb_g
+        ir = signal.lfilter([1.0], den, ir)
+        ir = signal.lfilter([1.0], np.concatenate([[1.0], np.zeros(int(d * 1.37) - 1), [-comb_g * 0.7]]), ir)
     b, a = signal.butter(2, damp / (RATE / 2), "low")
     ir = signal.lfilter(b, a, ir)
-    ir[0:] *= ramp(n, 0, int(0.004 * RATE))
+    ir[0:] *= ramp(n, 0, int(0.0008 * RATE))
     ir = np.concatenate([np.zeros(int(pre_ms / 1000 * RATE)), ir])
     return ir / np.sqrt(np.sum(ir ** 2))
 
 
-def tail_for(room, late, body, seed):
-    rt60, damp, rel, pre = ROOMS[room]
-    drive = np.concatenate([body[int(0.05 * RATE):], late])
-    y = signal.fftconvolve(drive, room_ir(rt60, damp, seed, pre))
+def tail_for(room, x, seed):
+    rt60, _damp, _pre, drive_ms, _db = ROOMS[room]
+    a0 = int(0.003 * RATE)
+    drive = x[a0: a0 + int(drive_ms / 1000 * RATE)].copy()
+    f = min(int(0.03 * RATE), len(drive) // 2)
+    drive[-f:] *= np.linspace(1, 0, f)
+    y = signal.fftconvolve(drive, room_ir(room, seed))
     y = y[: int((rt60 * 1.1 + 0.2) * RATE)]
-    ref = np.max(np.abs(late)) if np.max(np.abs(late)) > 0 else np.max(np.abs(body)) * 0.2
-    y *= rel * max(ref, 0.04) / (np.max(np.abs(y)) + 1e-9)
     f = int(0.08 * RATE)
+    y[-f:] *= np.linspace(1, 0, f) ** 2
+    return y
+
+
+
+def outdoor_for(x, late, seed):
+    """Open air: almost no reverb, the recording's own late part low, and the distant slap-back off a far surface."""
+    b, a = signal.butter(2, 2300.0 / (RATE / 2), "low")
+    src = signal.lfilter(b, a, x[int(0.004 * RATE): int(0.45 * RATE)])
+    y = np.zeros(int(1.5 * RATE))
+    rng = np.random.default_rng(seed)
+    for delay, gain in ((0.27, 0.8), (0.61, 0.38)):
+        smear = rng.standard_normal(int(0.02 * RATE)) * np.exp(-np.arange(int(0.02 * RATE)) / (0.006 * RATE))
+        smear[0] += 1.5
+        echo = signal.fftconvolve(src, smear / np.sqrt(np.sum(smear ** 2)))
+        k = int(delay * RATE)
+        y[k: k + len(echo)] += (gain * echo)[: len(y) - k]
+        src = signal.lfilter(b, a, src)  # each bounce loses more of the top
+    y[: len(late)] += 0.25 * late[: len(y)]
+    f = int(0.2 * RATE)
     y[-f:] *= np.linspace(1, 0, f) ** 2
     return y
 
@@ -149,10 +198,10 @@ def main():
             gain = 10 ** (peak / 20)
             write(os.path.join(folder, "attack_%d.ogg" % n), attack * gain, peak)
             write(os.path.join(folder, "body_%d.ogg" % n), body * gain, peak)
-            write(os.path.join(folder, "tail_outdoor_%d.ogg" % n), late * gain, peak - 14.0)
+            write(os.path.join(folder, "tail_outdoor_%d.ogg" % n), outdoor_for(x, late, 500 + n) * gain, OUTDOOR_DB)
             for room in ROOMS:
-                write(os.path.join(folder, "tail_%s_%d.ogg" % (room, n)), tail_for(room, late, body, 1000 + n) * gain,
-                      peak - 12.0)
+                write(os.path.join(folder, "tail_%s_%d.ogg" % (room, n)), tail_for(room, x, 1000 + n) * gain,
+                      ROOMS[room][4])
             write(os.path.join(folder, "far_%d.ogg" % n), far_for(x, 7 + n) * gain, peak - 6.0)
         print(cls, len(sources), "variants")
     # the suppressed pistol: the stock's derived report is the body; no crack, no tail

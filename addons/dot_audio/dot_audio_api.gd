@@ -21,5 +21,5 @@ extends RefCounted
 # 10: DotShotDef, DotShotPlayer, DotShotRules, DotAudioEnclosure and DotAudioShotStock (layered shots, room-aware tails).
 # 9: DotAudioSurf, DotAudioSurfRules and the stock surf glide (DotAudioStock.SURF_GLIDE_ID);
 #    DotAudioFootsteps.surf_rules silences steps and landings on a ramp.
-const LEVEL := 10
+const LEVEL := 11
 const OLDEST := 1

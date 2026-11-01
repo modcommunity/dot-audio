@@ -38,6 +38,7 @@ var _target_open := 1.0
 var _swept := false
 var _query := PhysicsRayQueryParameters3D.new()
 var _reverb: AudioEffectReverb = null
+var _comb: AudioEffectDelay = null
 var _bus_index := -1
 
 
@@ -65,6 +66,57 @@ static func classify(room_size: float, open: float) -> StringName:
 	return &"hall"
 
 
+## Mean ray distance in metres at the middle of each tail class; the tail weights interpolate between these in log size.
+const CLASS_CENTRES := {&"small": 1.8, &"medium": 4.5, &"large": 10.0, &"hall": 24.0}
+## Openness below which the room is fully closed and above which the outdoor tail takes over completely.
+const OPEN_FROM := 0.12
+const OPEN_TO := 0.55
+## A room at or below this many metres is fully "tight"; at or above [constant TIGHT_TO] it is not.
+const TIGHT_FROM := 2.5
+const TIGHT_TO := 8.0
+## Tail loudness, overall loudness (dB) and body pitch change at full tightness.
+const TIGHT_TAIL_GAIN := 0.5
+const TIGHT_LOUD_DB := 1.5
+const TIGHT_BODY_PITCH := 0.90
+const SPEED_OF_SOUND := 343.0
+
+
+## Equal-power weight per tail class (small, medium, large, hall, outdoor; squares sum to 1) for a room of
+## [param room_size] metres (mean ray distance) and [param open] (miss fraction). The room classes crossfade in log size
+## between neighbours; openness crossfades them all into the outdoor tail.
+static func tail_weights(room_size: float, open: float) -> Dictionary:
+	var names: Array[StringName] = [&"small", &"medium", &"large", &"hall"]
+	var x := log(clampf(room_size, 0.2, 400.0))
+	var amp := {}
+	for n in names:
+		amp[n] = 0.0
+	if x <= log(CLASS_CENTRES[names[0]]):
+		amp[names[0]] = 1.0
+	elif x >= log(CLASS_CENTRES[names[3]]):
+		amp[names[3]] = 1.0
+	else:
+		for i in 3:
+			var a := log(CLASS_CENTRES[names[i]])
+			var b := log(CLASS_CENTRES[names[i + 1]])
+			if x >= a and x <= b:
+				var t := (x - a) / (b - a)
+				amp[names[i]] = cos(t * PI * 0.5)
+				amp[names[i + 1]] = sin(t * PI * 0.5)
+				break
+	var o := smoothstep(OPEN_FROM, OPEN_TO, open)
+	var out := {}
+	for n in names:
+		out[n] = float(amp[n]) * cos(o * PI * 0.5)
+	out[&"outdoor"] = sin(o * PI * 0.5)
+	return out
+
+
+## 1 for a closet or corridor (small and shut), 0 for a big or open space.
+static func tightness(room_size: float, open: float) -> float:
+	var small := 1.0 - smoothstep(TIGHT_FROM, TIGHT_TO, room_size)
+	return small * (1.0 - smoothstep(OPEN_FROM, OPEN_TO, open))
+
+
 ## Creates the reverb bus when missing. Safe to call twice.
 func ensure_bus() -> DotResult:
 	_bus_index = AudioServer.get_bus_index(BUS)
@@ -78,6 +130,19 @@ func ensure_bus() -> DotResult:
 		if existing != null:
 			_reverb = existing
 			break
+	for i in AudioServer.get_bus_effect_count(_bus_index):
+		var existing_comb := AudioServer.get_bus_effect(_bus_index, i) as AudioEffectDelay
+		if existing_comb != null:
+			_comb = existing_comb
+			break
+	if _comb == null:
+		_comb = AudioEffectDelay.new()
+		_comb.dry = 1.0
+		_comb.tap1_active = true
+		_comb.tap2_active = false
+		_comb.feedback_active = true
+		_comb.feedback_lowpass = 5000.0
+		AudioServer.add_bus_effect(_bus_index, _comb)
 	if _reverb == null:
 		_reverb = AudioEffectReverb.new()
 		_reverb.dry = 1.0
@@ -142,8 +207,25 @@ func reverb_params() -> Dictionary:
 	}
 
 
+## [method tail_weights] for the current smoothed room.
+func weights() -> Dictionary:
+	return tail_weights(size, openness)
+
+
+## [method tightness] for the current smoothed room.
+func tight() -> float:
+	return tightness(size, openness)
+
+
+## The comb's round-trip time in ms for the current room: sound crossing it and back.
+func comb_delay_ms() -> float:
+	return clampf(2.0 * size / SPEED_OF_SOUND * 1000.0, 3.0, 60.0)
+
+
 func describe() -> Dictionary:
 	var out := reverb_params()
+	out["weights"] = weights()
+	out["tight"] = tight()
 	out["tail_class"] = tail_class
 	out["size"] = size
 	out["openness"] = openness
@@ -173,6 +255,14 @@ func _pick_class() -> void:
 
 
 func _apply_reverb() -> void:
+	if _comb != null:
+		# The resonance of the room: a short echo at the wall-and-back time, fading out as the room opens.
+		var t := tight()
+		var ms := comb_delay_ms()
+		_comb.tap1_delay_ms = ms
+		_comb.tap1_level_db = linear_to_db(maxf(0.55 * t, 0.001))
+		_comb.feedback_delay_ms = ms * 1.31
+		_comb.feedback_level_db = linear_to_db(maxf(0.5 * t, 0.001))
 	if _reverb == null:
 		return
 	var p := reverb_params()

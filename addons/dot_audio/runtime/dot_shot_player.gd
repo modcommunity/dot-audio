@@ -3,7 +3,7 @@ extends Node
 
 ## Plays a [DotShotDef] as layers: attack, body and the room's tail from the close set, the far set crossfaded in by
 ## distance, all delayed by the speed of sound, with small pitch and gain jitter and never the same variant twice in a
-## row. The tail class comes from [member enclosure]. Call [method fire]; layers are played from [method advance].
+## row. The tail is a crossfade of the classes by [member enclosure]'s measured room. Call [method fire]; layers are played from [method advance].
 
 const CHANNEL := "audio.shot"
 
@@ -62,17 +62,27 @@ func plan(id: StringName, at: Vector3, suppressed := false, volume_scale := 1.0)
 	var w := rules.weights(metres)
 	var near_w := w.x
 	var far_w := w.y
-	var tail := StringName("tail_%s" % (enclosure.tail_class if enclosure != null and rules.enclosure else &"outdoor"))
+	var in_room := enclosure != null and rules.enclosure
+	var tail_w: Dictionary = enclosure.weights() if in_room else {&"outdoor": 1.0}
+	var tight := enclosure.tight() if in_room else 0.0
+	# A shooter in a tight space hears it louder, with the body lower in the mid range and the tail up against the attack.
+	var loud := volume_scale * db_to_linear(DotAudioEnclosure.TIGHT_LOUD_DB * tight)
+	var body_pitch := lerpf(1.0, DotAudioEnclosure.TIGHT_BODY_PITCH, tight)
+	var tail_gain := 1.0 + DotAudioEnclosure.TIGHT_TAIL_GAIN * tight
 	var delay := rules.delay_for(metres)
 	var near_layers: Array[Array] = []
 	if suppressed and not shot.suppressed_body.is_empty():
-		near_layers = [[DotShotDef.SUPPRESSED_BODY, near_w], [tail, near_w * 0.35]]
+		near_layers = [[DotShotDef.SUPPRESSED_BODY, near_w, body_pitch]]
+		for cls: StringName in tail_w:
+			near_layers.append([StringName("tail_%s" % cls), near_w * 0.35 * float(tail_w[cls]) * tail_gain, 1.0])
 	else:
-		near_layers = [[DotShotDef.ATTACK, near_w * near_w], [DotShotDef.BODY, near_w], [tail, near_w]]
+		near_layers = [[DotShotDef.ATTACK, near_w * near_w, 1.0], [DotShotDef.BODY, near_w, body_pitch]]
+		for cls: StringName in tail_w:
+			near_layers.append([StringName("tail_%s" % cls), near_w * float(tail_w[cls]) * tail_gain, 1.0])
 	for entry in near_layers:
-		_add(out, shot, entry[0], entry[1], delay, volume_scale)
+		_add(out, shot, entry[0], entry[1], delay, loud, entry[2])
 	var far_layer := DotShotDef.SUPPRESSED_FAR if suppressed and not shot.suppressed_far.is_empty() else DotShotDef.FAR
-	_add(out, shot, far_layer, far_w, delay, volume_scale)
+	_add(out, shot, far_layer, far_w, delay, loud)
 	return out
 
 
@@ -118,7 +128,7 @@ func describe() -> Dictionary:
 			"tail": enclosure.tail_class if enclosure != null else &"outdoor"}
 
 
-func _add(out: Array[Dictionary], shot: DotShotDef, layer: StringName, weight: float, delay: float, volume_scale: float) -> void:
+func _add(out: Array[Dictionary], shot: DotShotDef, layer: StringName, weight: float, delay: float, volume_scale: float, pitch_scale := 1.0) -> void:
 	var paths := shot.layer(layer)
 	if paths.is_empty() or weight < floor_weight:
 		return
@@ -129,7 +139,7 @@ func _add(out: Array[Dictionary], shot: DotShotDef, layer: StringName, weight: f
 		"def_id": shot.def_id(layer, index),
 		"delay": delay,
 		"volume": weight * volume_scale * db_to_linear(jitter_db),
-		"pitch": 1.0 + _rng.randf_range(-pitch_jitter, pitch_jitter),
+		"pitch": pitch_scale * (1.0 + _rng.randf_range(-pitch_jitter, pitch_jitter)),
 	})
 
 

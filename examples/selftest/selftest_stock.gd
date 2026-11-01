@@ -504,6 +504,56 @@ func _test_shots() -> void:
 	var in_small := p.plan(shot.id, Vector3(5, 0, 0)).map(func(e: Dictionary) -> StringName: return e.layer)
 	_check(in_small.has(&"tail_small") and not in_small.has(&"tail_outdoor"), "a shot in a tight room plays the small tail instead of the outdoor one")
 	_check(enc.reverb_params().room_size < 0.2 and AudioServer.get_bus_index(DotAudioEnclosure.BUS) >= 0, "the reverb bus exists and a tight room has a small room size")
+	var W := DotAudioEnclosure.tail_weights
+	var norm_ok := true
+	var mono_ok := true
+	var prev_small := 2.0
+	for sz in [0.5, 1.0, 1.8, 3.0, 4.5, 7.0, 10.0, 17.0, 24.0, 60.0]:
+		for op in [0.0, 0.1, 0.3, 0.5, 0.8, 1.0]:
+			var ww: Dictionary = W.call(sz, op)
+			var sq := 0.0
+			for k in ww:
+				sq += float(ww[k]) * float(ww[k])
+			norm_ok = norm_ok and absf(sq - 1.0) < 0.001
+		var small_w: float = W.call(sz, 0.0)[&"small"]
+		mono_ok = mono_ok and small_w <= prev_small + 0.0001
+		prev_small = small_w
+	_check(norm_ok, "tail weights are equal power: squares sum to 1 over size and openness")
+	_check(mono_ok, "the small tail only fades as the room grows")
+	var closet: Dictionary = W.call(1.2, 0.0)
+	var corridor: Dictionary = W.call(3.2, 0.03)
+	var field: Dictionary = W.call(40.0, 0.9)
+	var openroom: Dictionary = W.call(12.0, 0.33)
+	var hall_w: Dictionary = W.call(30.0, 0.0)
+	_check(closet[&"small"] > 0.99 and field[&"outdoor"] > 0.99 and hall_w[&"hall"] > 0.99, "a closet is all small, a field all outdoor, a hall all hall")
+	_check(corridor[&"small"] > 0.3 and corridor[&"medium"] > 0.3 and corridor[&"hall"] == 0.0 and corridor[&"outdoor"] < 0.05, "a corridor crossfades small and medium")
+	_check(openroom[&"outdoor"] > 0.2 and openroom[&"outdoor"] < 0.8 and openroom[&"large"] > 0.3, "an open room is a blend of its class and outdoor")
+	var near_edge: Dictionary = W.call(DotAudioEnclosure.CLASS_CENTRES[&"small"] * 1.05, 0.0)
+	_check(near_edge[&"small"] > 0.95 and near_edge[&"medium"] < 0.3, "a small step in size gives a small step in weights (no snap)")
+	var tight_closet := DotAudioEnclosure.tightness(1.2, 0.0)
+	_check(tight_closet == 1.0 and DotAudioEnclosure.tightness(12.0, 0.0) == 0.0 and DotAudioEnclosure.tightness(1.2, 0.9) == 0.0 and DotAudioEnclosure.tightness(5.0, 0.0) > 0.0 and DotAudioEnclosure.tightness(5.0, 0.0) < 1.0, "tightness is 1 in a closet and 0 in a hall or outdoors")
+	p.pitch_jitter = 0.0
+	p.gain_jitter_db = 0.0
+	_sweep(enc, 1.5)
+	var in_closet := p.plan(shot.id, Vector3(5, 0, 0))
+	_sweep(enc, 40.0, 2)
+	var in_field := p.plan(shot.id, Vector3(5, 0, 0))
+	var body_closet: Dictionary = in_closet.filter(func(e: Dictionary) -> bool: return e.layer == &"body")[0]
+	var body_field: Dictionary = in_field.filter(func(e: Dictionary) -> bool: return e.layer == &"body")[0]
+	_check(body_closet.volume > body_field.volume * 1.1 and body_closet.pitch < body_field.pitch * 0.95, "in a closet the shot is louder and the body sits lower")
+	var tail_closet := 0.0
+	for e in in_closet:
+		if String(e.layer).begins_with("tail_"):
+			tail_closet += e.volume
+	var tail_field := 0.0
+	for e in in_field:
+		if String(e.layer).begins_with("tail_"):
+			tail_field += e.volume
+	_check(tail_closet > 1.2 and tail_field < tail_closet * 0.8, "the tail layer is heavier in a closet than outdoors (%.2f vs %.2f)" % [tail_closet, tail_field])
+	p.pitch_jitter = 0.03
+	p.gain_jitter_db = 1.5
+	_sweep(enc, 2.0)
+	_check(absf(enc.comb_delay_ms() - 2.0 * 2.0 / 343.0 * 1000.0) < 0.5, "the comb delay follows the measured size (a 2 m room is %.1f ms)" % enc.comb_delay_ms())
 	var h := DotAudioEnclosure.fibonacci(24)
 	_check(h.size() == 24 and absf(h[0].length() - 1.0) < 0.001 and absf(h[10].length() - 1.0) < 0.001, "the rays are unit directions")
 

@@ -86,3 +86,14 @@ Seven looping slide scrapes (`slide_generic`, `slide_concrete`, `slide_metal`, `
 ## surf/
 
 `surf_glide.ogg` is synthesised by `tools/make_surf_stock.py` (in the repository, not the addon) from a fixed seed: band-shaped noise around 3 kHz with a slow shimmer, joined into a seamless loop, no recordings and no third-party samples. Dedicated to the public domain under CC0 1.0 by the dot-audio authors. The game plays it quieter and higher the faster a body surfs.
+
+## shots/
+
+The layered shots (`attack`, `body`, `tail_*`, `far` per weapon class, plus `suppressed/`) are cut and processed by `tools/make_shot_layers.py` (in the repository, not the addon) from these CC0 recordings. The indoor tails are the same shot's late energy convolved with a room impulse response the script generates from seeded noise, so no third-party impulse response is involved.
+
+| Source | Author | URL | Licence | Used for |
+| --- | --- | --- | --- | --- |
+| The Free Firearm Sound Library | (see page) | https://opengameart.org/content/the-free-firearm-sound-library | CC0 | the stock `weapons/*_fire_N` recordings every class is cut from |
+| Gunshot Sounds | Tabasco | https://opengameart.org/content/gunshot-sounds | CC0 | consulted as a candidate source; no file from it is in this set |
+| Gunshots | kurt | https://opengameart.org/content/gunshots | CC0 | `22 Pistol` (light), `22 Magnum` (magnum), `Unkown` (sniper) |
+| Eldritch Grim impacts and gun FX | Eldritch Grim | https://opengameart.org/content/impactsgunsfx | CC0 | `Pistol 1-3` (light, magnum), `Shotgun 1-3` (shotgun) |

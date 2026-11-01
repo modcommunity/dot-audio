@@ -68,6 +68,10 @@ The stock files are in `addons/dot_audio/stock/`, all CC0: footsteps from [Kenne
 
 `DotAmbience` plays a mood: looping beds plus sparse random one-shots from a random direction, crossfaded when the mood changes, quiet by default, with pause/duck/hush holders and live settings (`DotAmbienceConfig`: on/off, volume, one-shot frequency, mood override, allowed moods, a directory of the owner's own sounds). The addon ships no sounds for it; a game ships a `moods.json` set. [docs/ambience.md](docs/ambience.md)
 
+## Layered shots that know the room
+
+`DotShotDef` (a Resource: attack, body, five tail classes, far and suppressed sets, three to six variants each) and `DotShotPlayer` play a shot as layers: close shots as attack, body and the tail of the room you are in, far shots as a low-passed set, crossfaded by distance and delayed by distance over the speed of sound; no variant repeats the one before, with a little pitch and gain jitter. `DotAudioEnclosure` casts 16 to 32 fibonacci rays over a few frames, reads mean hit distance as room size and the miss fraction as openness, smooths both, picks the tail class (small, medium, large, hall, outdoor) and drives one reverb bus. `DotShotRules` holds the `snd_shot_*` cvars, all on by default. `DotAudioShotStock` gives a stock shot per weapon class. A pack assigns its own files through `DotShotDef`. Sources are CC0 and credited in `addons/dot_audio/stock/CREDITS.md`: The Free Firearm Sound Library, Gunshots by kurt and Eldritch Grim (OpenGameArt); Gunshot Sounds by Tabasco was consulted and contributes no file.
+
 ## Using it
 
 ```gdscript

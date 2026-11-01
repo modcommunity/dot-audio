@@ -1,0 +1,29 @@
+[
+    {
+        "paths": [
+            ""
+        ],
+        "licence": "MIT",
+        "author": "TMC",
+        "url": "https://github.com/modcommunity/dot-audio",
+        "title": "dot-audio (original content, including the synthesised sounds)"
+    },
+    {
+        "paths": [
+            "addons/dot_audio/stock/weapons"
+        ],
+        "licence": "CC-BY-3.0",
+        "author": "Tabasco (text by Vincent Sevedge); Michel Baradari",
+        "url": "https://opengameart.org/content/gunshot-sounds",
+        "title": "Weapon stock: layers of Gunshot Sounds and Michel Baradari's shot packs (modified); see addons/dot_audio/stock/CREDITS.md for the full source list, including CC-BY-4.0 and CC0 sources"
+    },
+    {
+        "paths": [
+            "addons/dot_audio/stock/weapons"
+        ],
+        "licence": "CC-BY-4.0",
+        "author": "KuraiWolf; jc-sounds",
+        "url": "https://opengameart.org/content/light-machine-gun",
+        "title": "Weapon stock: Light Machine Gun and JC Sounds Sci-Fi Pack Vol 1 (modified); https://opengameart.org/content/jc-sounds-sci-fi-pack-vol-1"
+    }
+]

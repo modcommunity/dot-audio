@@ -48,7 +48,7 @@ Slices of CC0 recordings, cut, pitched, layered with a synthesised sub-bass thum
 | The Free Firearm Sound Library (Prepared SFX Library) | Ben Jaszczak, Brian Nelson, Kevin Heras, Matthew Nanney (Still North Media; uploaded by bart) | https://opengameart.org/content/the-free-firearm-sound-library | `*_fire`, `*_far`, `minigun_fire` (1911, Walther PPQ, Bersa, S&W 642, Carl Gustav M45, PPSh, AR-15, SKS, AK-47, Model 1894, Marlin 336, Savage 10, Mosin Nagant, Tikka T3, Arisaka, Springfield 1917, CD, Model 12, Nova, Mossberg) |
 | Medieval sound effects - Weapon Textures (parts 1 and 2) | Ben Jaszczak and Brian Nelson (uploaded by MedicineStorm) | https://opengameart.org/content/medieval-sound-effects-weapon-textures | `swing*`, `throw`, `draw_blade`, `bow_*`, `crossbow_*`, `arrow_pass` |
 | 25 CC0 bang / firework SFX | rubberduck | https://opengameart.org/content/25-cc0-bang-firework-sfx | `launcher_fire`, `explosion` (cannon shots) |
-| Gun reload sounds | Joaken, SpringySpringo | https://opengameart.org/content/gun-reload-sounds | `reload_*`, `equip` |
+| Gun reload sounds | SpringySpringo | https://opengameart.org/content/gun-reload-sounds | `reload_*`, `equip` |
 | 2 Gun Reloads | StarNinjas | https://opengameart.org/content/2-gun-reloads | `reload_*` |
 | Shotgun Reload Sound effects | zer0sol | https://opengameart.org/content/shotgun-reload-sound-effects | `reload_shell`, `rack` |
 | Gun Reload Sound Effects (CC0) | BMacZero | https://opengameart.org/content/gun-reload-sound-effects | `reload_out_*`, `reload_in_*` (clipload1/2, singlebullet1) |
@@ -57,12 +57,12 @@ Slices of CC0 recordings, cut, pitched, layered with a synthesised sub-bass thum
 | Impact Sounds 1.0 | Kenney | https://kenney.nl/assets/impact-sounds | `bash`, `impact*`, `melee_*`, `casing` |
 | Sci-fi Sounds 1.0 | Kenney | https://kenney.nl/assets/sci-fi-sounds | `explosion` layer |
 | Light Machine Gun (CC-BY 4.0) | KuraiWolf | https://opengameart.org/content/light-machine-gun | `lmg_fire` |
-| Gunshot Sounds (sks, mosin, cz; the page says CC0, the bundled text CC-BY 3.0, credited as CC-BY 3.0) | Tabasco, text by Vincent Sevedge | https://opengameart.org/content/gunshot-sounds | `battle_fire`, `marksman_fire`, `lmg_fire` layers, `reload_*_sniper` (bolt) |
+| Gunshot Sounds (sks, mosin, cz; the page now says CC0, the text bundled with the download says CC-BY 3.0; credited as CC-BY 3.0 to be safe) | Tabasco, text by Vincent Sevedge | https://opengameart.org/content/gunshot-sounds | `battle_fire`, `marksman_fire`, `lmg_fire` layers, `reload_*_sniper` (bolt) |
 | Chaingun, pistol, rifle and shotgun shots (CC-BY 3.0) | Michel Baradari | http://apollo-music.de (hosted on opengameart.org; the pack's info.txt names the licence) | `carbine_fire`, `derringer_fire`, `mpistol_fire`, `autoshot_fire` |
 | Alien Blaster (CC0) | cyklon698 | https://opengameart.org/content/alien-blaster | `beam_fire` |
-| Laser weapon burst fire (CC0) | number99 | https://opengameart.org/content/laser-weapon-burst-fire | `beam_fire` |
+| Laser weapon burst fire (CC0) | celestialghost8 | https://opengameart.org/content/laser-weapon-burst-fire | `beam_fire` |
 | Theremin Laser SFX (CC0) | Zane Little Music | https://opengameart.org/content/theremin-laser-sfx | `beam_fire` |
-| Doomsday Laser Cannon Sound Effect (CC0) | railkill | https://opengameart.org/content/doomsday-laser-cannon-sound-effect | `rail_fire` |
+| Doomsday Laser Cannon Sound Effect (CC0) | TAD | https://opengameart.org/content/doomsday-laser-cannon-sound-effect | `rail_fire` |
 | JC Sounds Sci-Fi Pack Vol 1 (CC-BY 4.0) | jc-sounds | https://opengameart.org/content/jc-sounds-sci-fi-pack-vol-1 | `charge_fire`, `rail_fire`, `*_energy` reloads, `dry_energy`, `equip_energy` |
 
 `suppressed_fire` is derived from the stock's own `light_fire` files by `tools/make_suppressed.py` (low-passed, softened, shortened, with a synthesised action clack), so it adds no source.

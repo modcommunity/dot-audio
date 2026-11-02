@@ -554,8 +554,10 @@ func _test_synth() -> void:
 	_check(not bank.has(&"not_in_the_catalogue"), "an id the catalogue does not have is skipped")
 	_check(bank.has(&"synth_step"), "and the rest of the bank is still built")
 
-	# --- The sink's resolution order ----------------------------------------
+	_test_synth_sink(bank)
 
+
+func _test_synth_sink(bank: Dictionary) -> void:
 	var host := Node.new()
 	add_child(host)
 
@@ -599,11 +601,11 @@ func _test_synth() -> void:
 
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(probe_path))
 
-	# --- Looping ----------------------------------------------------------------
-	# The manager has always put `looping` in the request; until 2026-09-25 the sink never
-	# read it, so a looping def played once. Asserted on the stream the player was handed
-	# rather than by waiting for it to end, because the dummy driver's clock is not one a
-	# suite should lean on.
+	_test_synth_loop(host, sink, bank)
+
+
+func _test_synth_loop(host: Node, sink: DotAudioSinkGodot, bank: Dictionary) -> void:
+	# Assert on the stream the player was handed; the dummy driver's clock is not one to wait on.
 	var stream_of := func(h: int) -> AudioStream:
 		for child in host.get_children():
 			if int(child.get_meta(&"dot_audio_handle", 0)) == h:

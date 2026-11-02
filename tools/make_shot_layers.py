@@ -31,9 +31,8 @@ EXTRA = {
 CLASSES = ["light", "smg", "magnum", "rifle", "heavy", "sniper", "shotgun"]
 MAX_VARIANTS = 6
 # tail class -> (RT60 s, damping low-pass Hz, pre-delay ms, drive ms (how much of the shot excites the room), peak dB)
-# A tight room is excited by the bang alone and rings off in a tenth of a second, so its drive is short; a hall keeps
-# ringing on the shot's own long tail. The levels run the other way: the tighter the room, the closer the tail is to the
-# attack, and an open field has almost none (its energy is the slap-back below).
+# A tight room rings off fast so its drive is short and its tail close to the attack; a hall rings on the shot's own
+# long tail at lower levels, and an open field has almost none (its energy is the slap-back below).
 ROOMS = {
     "small": (0.13, 7000.0, 1.0, 110.0, -4.0),
     "medium": (0.45, 5200.0, 7.0, 260.0, -9.0),

@@ -650,6 +650,8 @@ func _test_synth() -> void:
 	sink.stop(gen_handle)
 	_check(not sink.is_playing(gen_handle), "until it is stopped")
 
+	# Playing players hold their playbacks until stopped; freeing the host alone leaves them at exit.
+	sink.stop_all()
 	host.queue_free()
 
 # --- 9 ----------------------------------------------------------------------

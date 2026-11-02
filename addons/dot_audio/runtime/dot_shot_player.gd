@@ -5,8 +5,6 @@ extends Node
 ## distance, all delayed by the speed of sound, with small pitch and gain jitter and never the same variant twice in a
 ## row. The tail is a crossfade of the classes by [member enclosure]'s measured room. Call [method fire]; layers are played from [method advance].
 
-const CHANNEL := "audio.shot"
-
 var rules: DotShotRules = DotShotRules.new()
 ## Optional: its [member DotAudioEnclosure.tail_class] picks the tail; without one the tail is outdoor.
 var enclosure: DotAudioEnclosure = null

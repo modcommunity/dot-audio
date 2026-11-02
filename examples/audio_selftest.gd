@@ -1,4 +1,4 @@
-extends "selftest/selftest_stock.gd"
+extends "selftest/selftest_shots.gd"
 
 ## Exercises dot-audio on a machine with no sound card, which is the point.
 ##

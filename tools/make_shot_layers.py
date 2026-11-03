@@ -28,7 +28,7 @@ EXTRA = {
     "shotgun": ["eld/Impacts/Shotgun 1.wav", "eld/Impacts/Shotgun 2.wav", "eld/Impacts/Shotgun 3.wav"],
     "sniper": ["kurt/Unkown.wav"],
 }
-CLASSES = ["light", "smg", "magnum", "rifle", "heavy", "sniper", "shotgun"]
+CLASSES = ["light", "smg", "magnum", "rifle", "heavy", "sniper", "shotgun", "launcher", "minigun", "beam"]
 MAX_VARIANTS = 6
 # tail class -> (RT60 s, damping low-pass Hz, pre-delay ms, drive ms (how much of the shot excites the room), peak dB)
 # A tight room rings off fast so its drive is short and its tail close to the attack; a hall rings on the shot's own
@@ -64,7 +64,7 @@ def trim(x):
     on = int(np.argmax(np.abs(x) > 0.12 * peak))
     on = max(on - int(0.002 * RATE), 0)
     x = x[on: on + int(1.6 * RATE)]
-    f = int(0.2 * RATE)
+    f = min(int(0.2 * RATE), len(x) // 2)
     x[-f:] *= np.linspace(1, 0, f) ** 2
     return x
 
@@ -171,9 +171,10 @@ def write(path, y, peak_db):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--extra", default="/tmp/claude-1000/dl")
+    ap.add_argument("--only", nargs="*", help="build just these classes (the others need their EXTRA downloads)")
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
-    for cls in CLASSES:
+    for cls in args.only or CLASSES:
         sources = []
         i = 0
         while os.path.exists(os.path.join(WEAPONS, "%s_fire_%d.ogg" % (cls, i))):
@@ -203,6 +204,8 @@ def main():
                       ROOMS[room][4])
             write(os.path.join(folder, "far_%d.ogg" % n), far_for(x, 7 + n) * gain, peak - 6.0)
         print(cls, len(sources), "variants")
+    if args.only:
+        return
     # the suppressed pistol: the stock's derived report is the body; no crack, no tail
     folder = os.path.join(OUT, "suppressed")
     os.makedirs(folder, exist_ok=True)

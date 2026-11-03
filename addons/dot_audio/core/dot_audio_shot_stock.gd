@@ -6,7 +6,7 @@ extends RefCounted
 
 const PREFIX := "shot_"
 ## Weapon classes with a stock shot, and how many variant files each layer has.
-const COUNTS := {&"light": 6, &"smg": 4, &"magnum": 6, &"rifle": 5, &"heavy": 5, &"sniper": 6, &"shotgun": 6}
+const COUNTS := {&"light": 6, &"smg": 4, &"magnum": 6, &"rifle": 5, &"heavy": 5, &"sniper": 6, &"shotgun": 6, &"launcher": 5, &"minigun": 5, &"beam": 5}
 ## Variants of the suppressed set, which has a body and a far layer only.
 const SUPPRESSED_COUNT := 4
 

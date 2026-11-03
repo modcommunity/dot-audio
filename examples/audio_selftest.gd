@@ -529,8 +529,10 @@ func _test_synth() -> void:
 		"an absurd length is clamped rather than allocating a minute of placeholder"
 	)
 
-	# --- The bank -----------------------------------------------------------
+	_test_synth_bank()
 
+
+func _test_synth_bank() -> void:
 	var cat := _synth_catalogue()
 	var bank := DotAudioSynth.bank(
 		cat,
@@ -735,7 +737,10 @@ func _test_shaping() -> void:
 
 	_check(DotAudioSink.new().voice(1).is_empty(), "a sink that cannot shape reads back nothing")
 
-	# --- The Godot sink: the engine's own player ---------------------------------------
+	_test_shaping_godot_sink()
+
+
+func _test_shaping_godot_sink() -> void:
 	var host := Node.new()
 	add_child(host)
 	var gs := DotAudioSinkGodot.new(host, 1)
@@ -754,7 +759,7 @@ func _test_shaping() -> void:
 		and is_equal_approx(float(p.get("pitch_scale")), 0.75),
 		"the Godot sink sets the pooled player itself"
 	)
-	v = gs.voice(low)
+	var v := gs.voice(low)
 	_check(
 		is_equal_approx(float(v.get("volume_db", 0.0)), -12.0)
 		and is_equal_approx(float(v.get("pitch", 0.0)), 0.75),

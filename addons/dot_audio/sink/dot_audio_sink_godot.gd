@@ -59,33 +59,10 @@ func play(request: Dictionary) -> int:
 	if host == null or not is_instance_valid(host):
 		return 0
 
-	var path := str(request.get("path", ""))
-	var id := StringName(request.get("id", ""))
-
-	var stream: AudioStream = null
-
-	if not path.is_empty():
-		stream = stream_at(path)
-
-	# Only once the filesystem has had its turn. See `bank`.
-	if stream == null and not bank.is_empty():
-		if bank.has(path):
-			stream = bank[path] as AudioStream
-		elif bank.has(id):
-			stream = bank[id] as AudioStream
-
+	var stream := _stream_for(request)
 	if stream == null:
-		# Not an error. A client that has not downloaded a pack yet, or a deployment that
-		# ships no audio at all, is a legitimate configuration -- and an effect never
-		# changes the simulation, so dropping one is always safe. Logged at debug so it is
-		# findable and does not turn a soundless build into a wall of red.
-		DotLog.debug("audio", "no such stream", {"path": path, "id": String(id)})
 		return 0
 
-	# [b]Honoured here, and it was not until 2026-09-25.[/b] The manager has always put
-	# `looping` in the request and nothing read it, so a looping def — an engine hum, an
-	# ambience bed — played once and stopped, and a game built its engine as a pulse to
-	# work round it.
 	var looping := bool(request.get("looping", false))
 	if looping:
 		stream = _looped(stream)
@@ -96,24 +73,7 @@ func play(request: Dictionary) -> int:
 		return 0
 
 	player.stream = stream
-	player.bus = str(request.get("bus", "Master"))
-	player.volume_db = float(request.get("volume_db", 0.0))
-	player.pitch_scale = float(request.get("pitch", 1.0))
-
-	match kind:
-		DotAudioDef.Kind.POSITIONAL_3D:
-			var p3 := player as AudioStreamPlayer3D
-			p3.global_position = request.get("position", Vector3.ZERO)
-			p3.unit_size = float(request.get("unit_size", 10.0))
-			p3.max_distance = float(request.get("max_distance", 0.0))
-		DotAudioDef.Kind.POSITIONAL_2D:
-			var p2 := player as AudioStreamPlayer2D
-			var pos: Vector3 = request.get("position", Vector3.ZERO)
-			# A 2D game's world is the XZ plane everywhere else in this family -- dot-npc
-			# maps one onto it so its senses and navigation run unchanged -- so the same
-			# convention here means one request shape serves both.
-			p2.global_position = Vector2(pos.x, pos.z)
-			p2.max_distance = float(request.get("max_distance", 2000.0))
+	_configure(player, kind, request)
 
 	var handle := _next
 	_next += 1
@@ -126,6 +86,43 @@ func play(request: Dictionary) -> int:
 	player.set_meta(&"dot_audio_handle", handle)
 	player.play()
 	return handle
+
+
+## The stream for a request: by path, then the bank; null (and a debug line) when neither has it.
+func _stream_for(request: Dictionary) -> AudioStream:
+	var path := str(request.get("path", ""))
+	var id := StringName(request.get("id", ""))
+	var stream: AudioStream = null
+	if not path.is_empty():
+		stream = stream_at(path)
+	# Only once the filesystem has had its turn. See `bank`.
+	if stream == null and not bank.is_empty():
+		if bank.has(path):
+			stream = bank[path] as AudioStream
+		elif bank.has(id):
+			stream = bank[id] as AudioStream
+	if stream == null:
+		# A pack not downloaded yet, or a build with no audio, is legitimate and never changes the simulation.
+		DotLog.debug("audio", "no such stream", {"path": path, "id": String(id)})
+	return stream
+
+
+func _configure(player: Node, kind: int, request: Dictionary) -> void:
+	player.bus = str(request.get("bus", "Master"))
+	player.volume_db = float(request.get("volume_db", 0.0))
+	player.pitch_scale = float(request.get("pitch", 1.0))
+	match kind:
+		DotAudioDef.Kind.POSITIONAL_3D:
+			var p3 := player as AudioStreamPlayer3D
+			p3.global_position = request.get("position", Vector3.ZERO)
+			p3.unit_size = float(request.get("unit_size", 10.0))
+			p3.max_distance = float(request.get("max_distance", 0.0))
+		DotAudioDef.Kind.POSITIONAL_2D:
+			var p2 := player as AudioStreamPlayer2D
+			var pos: Vector3 = request.get("position", Vector3.ZERO)
+			# The family's 2D world is the XZ plane, so one request shape serves both.
+			p2.global_position = Vector2(pos.x, pos.z)
+			p2.max_distance = float(request.get("max_distance", 2000.0))
 
 
 ## The stream at [param path]: the imported resource when the build has it, else the file's

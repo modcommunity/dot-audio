@@ -6,7 +6,7 @@ extends RefCounted
 
 const PREFIX := "shot_"
 ## Weapon classes with a stock shot, and how many variant files each layer has.
-const COUNTS := {&"light": 6, &"smg": 4, &"magnum": 6, &"rifle": 5, &"heavy": 5, &"sniper": 6, &"shotgun": 6, &"launcher": 5, &"minigun": 5, &"beam": 5}
+const COUNTS := {&"light": 6, &"smg": 4, &"magnum": 6, &"rifle": 5, &"heavy": 5, &"sniper": 6, &"shotgun": 6, &"launcher": 5, &"minigun": 5, &"beam": 5, &"charge": 5, &"swing": 5, &"throw": 5}
 ## Variants of the suppressed set, which has a body and a far layer only.
 const SUPPRESSED_COUNT := 4
 
@@ -39,6 +39,10 @@ static func shot(weapon_class: StringName) -> DotShotDef:
 	d.suppressed_far = _files(quiet, "far", SUPPRESSED_COUNT)
 	if weapon_class == &"sniper" or weapon_class == &"shotgun" or weapon_class == &"heavy":
 		d.gain_db = 1.0
+	if weapon_class == &"swing" or weapon_class == &"throw":
+		d.near_unit_size = 3.0
+		d.far_unit_size = 12.0
+		d.max_distance = 60.0
 	return d
 
 

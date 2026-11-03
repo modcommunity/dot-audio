@@ -20,6 +20,7 @@ var _last: Dictionary = {}
 var _queue: Array[Dictionary] = []
 var _rng := RandomNumberGenerator.new()
 var _clock := 0.0
+var _tail_ends: Array[float] = []
 
 
 ## Seeds the jitter and variant choice, for a reproducible mix.
@@ -91,6 +92,11 @@ func fire(id: StringName, at: Vector3, suppressed := false, volume_scale := 1.0)
 	if not _shots.has(id) or manager == null:
 		return DotResult.fail(DotError.CODE_INVALID, "unknown shot '%s'" % id)
 	var items := plan(id, at, suppressed, volume_scale)
+	var kept: Array[Dictionary] = []
+	for item in items:
+		if not String(item["layer"]).begins_with("tail_") or _take_tail_voice(item):
+			kept.append(item)
+	items = kept
 	for item in items:
 		item["at"] = at
 		if float(item["delay"]) <= 0.001:
@@ -117,6 +123,11 @@ func _process(delta: float) -> void:
 	advance(delta)
 
 
+## Tail voices still sounding at the player's clock, for tests and [method describe].
+func tail_voices() -> int:
+	return _tail_ends.filter(func(t: float) -> bool: return t > _clock).size()
+
+
 func queued() -> int:
 	return _queue.size()
 
@@ -124,6 +135,23 @@ func queued() -> int:
 func describe() -> Dictionary:
 	return {"shots": _shots.size(), "queued": _queue.size(), "layers": rules.layers,
 			"tail": enclosure.tail_class if enclosure != null else &"outdoor"}
+
+
+## A tail is dropped when [member DotShotRules.tail_voices] are already sounding, and tails are spaced by their length over
+## that cap, so a rapid-fire weapon gets an even wash of tails rather than a burst, and the crack and body always play.
+func _take_tail_voice(item: Dictionary) -> bool:
+	var cap := rules.tail_voices
+	if cap <= 0:
+		return true
+	var due := _clock + float(item["delay"])
+	var length: float = DotShotRules.TAIL_SECONDS.get(StringName(String(item["layer"]).trim_prefix("tail_")), 1.5)
+	_tail_ends = _tail_ends.filter(func(t: float) -> bool: return t > _clock)
+	if _tail_ends.size() >= cap:
+		return false
+	if not _tail_ends.is_empty() and due < _tail_ends.max() - length * (cap - 1.0) / cap:
+		return false
+	_tail_ends.append(due + length)
+	return true
 
 
 func _add(out: Array[Dictionary], shot: DotShotDef, layer: StringName, weight: float, delay: float, volume_scale: float, pitch_scale := 1.0) -> void:

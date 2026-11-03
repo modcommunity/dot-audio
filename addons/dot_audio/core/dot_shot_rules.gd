@@ -12,6 +12,9 @@ const CVAR_DELAY := "snd_shot_delay"
 const CVAR_NEAR := "snd_shot_near"
 const CVAR_FAR := "snd_shot_far"
 const CVAR_REVERB := "snd_shot_reverb"
+const CVAR_TAIL_VOICES := "snd_shot_tail_voices"
+## Seconds each tail class sounds, from the stock files; the player's voice count uses them.
+const TAIL_SECONDS := {&"small": 0.27, &"medium": 0.66, &"large": 1.52, &"hall": 3.17, &"outdoor": 1.5}
 
 ## Layered shots at all; off leaves the game's single stock sound.
 var layers := true:
@@ -59,6 +62,15 @@ var reverb := 1.0:
 			reverb = v
 			changed.emit()
 
+## Most room tails sounding at once from one player, 0 for no limit: a rapid-fire weapon would stack a hall's 3 s tail
+## on every round.
+var tail_voices := 4:
+	set(v):
+		v = clampi(v, 0, 16)
+		if v != tail_voices:
+			tail_voices = v
+			changed.emit()
+
 ## Metres per second; the delay of a shot heard from [param metres].
 const SPEED_OF_SOUND := 343.0
 
@@ -91,6 +103,8 @@ func cvar_specs() -> Array[Dictionary]:
 			"description": "Metres beyond which only the far shot set plays"},
 		{"name": CVAR_REVERB, "value": str(reverb), "min": 0.0, "max": 2.0,
 			"description": "Scale of the room reverb on shots: 0 none, 1 normal, 2 double"},
+		{"name": CVAR_TAIL_VOICES, "value": str(tail_voices), "min": 0.0, "max": 16.0,
+			"description": "Most room tails sounding at once from one player, 0 for no limit (a rapid-fire weapon in a hall)"},
 	]
 
 
@@ -143,10 +157,11 @@ func set_cvar(cvar_name: String, value: String) -> bool:
 			elif cvar_name == CVAR_ENCLOSURE: enclosure = on
 			else: delay = on
 			return true
-		CVAR_RAYS:
+		CVAR_RAYS, CVAR_TAIL_VOICES:
 			if not text.is_valid_int():
 				return false
-			rays = text.to_int()
+			if cvar_name == CVAR_RAYS: rays = text.to_int()
+			else: tail_voices = text.to_int()
 			return true
 		CVAR_NEAR, CVAR_FAR, CVAR_REVERB:
 			if not text.is_valid_float():

@@ -151,3 +151,42 @@ func _test_shot_playback(shot: DotShotDef, p: DotShotPlayer) -> void:
 	r.layers = false
 	p.rules = r
 	_check(not p.fire(shot.id, Vector3(5, 0, 0)).ok, "with layers off the player declines so the caller keeps its own sound")
+
+
+func _test_shot_tail_cap() -> void:
+	_section("Layered shots: a rapid-fire weapon keeps a bounded number of room tails")
+	var m := _manager(DotAudioCatalogue.new(), 32)
+	var enc := DotAudioEnclosure.new()
+	enc.send_bus = &"Master"
+	add_child(enc)
+	_sweep(enc, 30.0)
+	var p := DotShotPlayer.new()
+	p.manager = m
+	p.enclosure = enc
+	add_child(p)
+	p.seed_rolls(3)
+	var gun := DotAudioShotStock.shot(&"minigun")
+	var registered := p.register(gun).ok
+	_check(registered and enc.tail_class == &"hall", "a minigun in a hall registers with the hall tail")
+	var rounds := 0
+	var peak := 0
+	for i in 150:
+		var fired := p.fire(gun.id, Vector3(3, 0, 0))
+		rounds += 1 if fired.ok else 0
+		peak = maxi(peak, p.tail_voices())
+		p.advance(0.04)
+	_check(rounds == 150 and peak <= p.rules.tail_voices and peak > 1, "25 rounds a second for 6 s: at most %d hall tails at once, saw %d" % [p.rules.tail_voices, peak])
+	var plain := DotShotPlayer.new()
+	plain.manager = m
+	plain.enclosure = enc
+	plain.rules.tail_voices = 0
+	add_child(plain)
+	var unlimited := 0
+	for i in 150:
+		var _r := plain.fire(gun.id, Vector3(3, 0, 0))
+		unlimited = maxi(unlimited, plain.tail_voices())
+		plain.advance(0.04)
+	_check(unlimited == 0 or unlimited > peak, "with the cap off the same fire stacks more (%d) than with it (%d)" % [unlimited, peak])
+	var crack := p.fire(gun.id, Vector3(3, 0, 0))
+	_check(crack.ok and int(crack.value) >= 2, "a capped round still plays its crack and body")
+	_check(p.rules.set_cvar("snd_shot_tail_voices", "99") and p.rules.tail_voices == 16 and not p.rules.set_cvar("snd_shot_tail_voices", "x"), "the cap cvar is clamped to 0-16")

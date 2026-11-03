@@ -27,8 +27,15 @@ EXTRA = {
     "magnum": ["kurt/22%20Magnum.wav", "eld/Impacts/Pistol 2.wav"],
     "shotgun": ["eld/Impacts/Shotgun 1.wav", "eld/Impacts/Shotgun 2.wav", "eld/Impacts/Shotgun 3.wav"],
     "sniper": ["kurt/Unkown.wav"],
+    "charge": ["kenney/laserLarge_%03d.ogg" % i for i in range(5)],
 }
-CLASSES = ["light", "smg", "magnum", "rifle", "heavy", "sniper", "shotgun", "launcher", "minigun", "beam"]
+# classes cut from the extra downloads alone (their stock fire files have a licence that needs attribution)
+NO_STOCK = {"charge"}
+# class -> stock file stem when it is not `<class>_fire`
+STEM = {"swing": "swing", "throw": "throw"}
+# class -> dB added to every room tail: a whoosh excites a room far less than a shot does
+TAIL_TRIM_DB = {"swing": -9.0, "throw": -7.0}
+CLASSES = ["light", "smg", "magnum", "rifle", "heavy", "sniper", "shotgun", "launcher", "minigun", "beam", "charge", "swing", "throw"]
 MAX_VARIANTS = 6
 # tail class -> (RT60 s, damping low-pass Hz, pre-delay ms, drive ms (how much of the shot excites the room), peak dB)
 # A tight room rings off fast so its drive is short and its tail close to the attack; a hall rings on the shot's own
@@ -177,15 +184,15 @@ def main():
     for cls in args.only or CLASSES:
         sources = []
         i = 0
-        while os.path.exists(os.path.join(WEAPONS, "%s_fire_%d.ogg" % (cls, i))):
-            sources.append(os.path.join(WEAPONS, "%s_fire_%d.ogg" % (cls, i)))
+        while os.path.exists(os.path.join(WEAPONS, "%s_%d.ogg" % (STEM.get(cls, cls + "_fire"), i))):
+            sources.append(os.path.join(WEAPONS, "%s_%d.ogg" % (STEM.get(cls, cls + "_fire"), i)))
             i += 1
         for extra in EXTRA.get(cls, []):
             p = os.path.join(args.extra, extra)
             if os.path.exists(p):
                 sources.append(p)
         extras = [os.path.join(args.extra, e) for e in EXTRA.get(cls, []) if os.path.exists(os.path.join(args.extra, e))]
-        stock = [p for p in sources if p not in extras]
+        stock = [] if cls in NO_STOCK else [p for p in sources if p not in extras]
         sources = (extras + stock)[:MAX_VARIANTS]
         folder = os.path.join(OUT, cls)
         os.makedirs(folder, exist_ok=True)
@@ -198,10 +205,11 @@ def main():
             gain = 10 ** (peak / 20)
             write(os.path.join(folder, "attack_%d.ogg" % n), attack * gain, peak)
             write(os.path.join(folder, "body_%d.ogg" % n), body * gain, peak)
-            write(os.path.join(folder, "tail_outdoor_%d.ogg" % n), outdoor_for(x, late, 500 + n) * gain, OUTDOOR_DB)
+            trim_db = TAIL_TRIM_DB.get(cls, 0.0)
+            write(os.path.join(folder, "tail_outdoor_%d.ogg" % n), outdoor_for(x, late, 500 + n) * gain, OUTDOOR_DB + trim_db)
             for room in ROOMS:
                 write(os.path.join(folder, "tail_%s_%d.ogg" % (room, n)), tail_for(room, x, 1000 + n) * gain,
-                      ROOMS[room][4])
+                      ROOMS[room][4] + trim_db)
             write(os.path.join(folder, "far_%d.ogg" % n), far_for(x, 7 + n) * gain, peak - 6.0)
         print(cls, len(sources), "variants")
     if args.only:

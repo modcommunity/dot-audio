@@ -1,10 +1,8 @@
 class_name DotAudioSurfRules
 extends RefCounted
 
-## What surfing sounds like and when a body counts as surfing. A body on a ramp too steep to
-## stand on is gliding, not walking: footsteps and landings there are one constant noise, so they
-## are silenced and [DotAudioSurf] plays a quiet glide whose volume and pitch follow speed.
-## Every number is a `sv_surf_*` cvar (a game replicates them) and settable from a profile.
+## When a body counts as surfing: on a ramp too steep to stand on, footsteps and landings are
+## silenced and [DotAudioSurf] plays a glide that follows speed. Every number is a `sv_surf_*` cvar.
 
 const CVAR_PREFIX := "sv_surf_"
 

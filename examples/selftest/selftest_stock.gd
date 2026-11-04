@@ -3,7 +3,7 @@ extends "selftest_ambience.gd"
 ## The stock-sound sections of audio_selftest.gd: footsteps, slides, landings, weapon sounds, the raw fallback.
 
 
-# --- 10 ---------------------------------------------------------------------
+# Section 10
 
 class LandingCvar extends RefCounted:
 	signal changed(old: Variant, new_value: Variant)
@@ -100,7 +100,7 @@ func _stock_weapons() -> void:
 	var shot := load(DotAudioWeaponStock.defs()[0].path) as AudioStream
 	_check(shot != null and shot.get_length() > 0.05, "a weapon sound loads")
 
-# --- 11 ---------------------------------------------------------------------
+# Section 11
 
 func _test_footsteps() -> void:
 	_section("A step is distance travelled, and slow is silent")
@@ -203,7 +203,7 @@ func _check_surface_lookup(steps: DotAudioFootsteps, body: Node3D) -> void:
 	floor.queue_free()
 	tile.queue_free()
 
-# --- 12 ---------------------------------------------------------------------
+# Section 12
 
 func _test_slide() -> void:
 	_section("A slide scrapes the surface under it, once per slide")
@@ -414,7 +414,7 @@ func _test_raw_fallback() -> void:
 	DotAudioSinkGodot.clear_streams()
 	_check(DotAudioSinkGodot._RAW.streams.is_empty(), "clear_streams() drops the cache so a process can exit with no stream in use")
 
-# --- 14 ---------------------------------------------------------------------
+# Section 14
 
 ## Loading dot-audio must not keep a game alive at exit (a static var once held preloaded scripts). Only a
 ## process's own exit shows it, so a child loads dot-audio in the order that did it and this reads its stderr.

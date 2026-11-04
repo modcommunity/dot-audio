@@ -4,6 +4,9 @@ extends Node
 ## Run: `godot --headless --path . res://examples/ambience_bus_selftest.tscn`.
 
 const CHECKS := 9
+const SECTIONS := 1
+
+var _sections := 0
 
 var _passed := 0
 var _failed := 0
@@ -51,9 +54,10 @@ func _ready() -> void:
 	_check(found > 0 and beds_on_ambience, "every stock bed plays on the Ambience bus")
 	_check(m.db_for(&"Ambience") <= 0.0, "db_for reports the Ambience level")
 
-	print("%d passed, %d failed" % [_passed, _failed])
-	if _passed + _failed != CHECKS:
-		print("ERROR: %d of %d checks ran" % [_passed + _failed, CHECKS])
+	_sections += 1
+	print("%d sections, %d passed, %d failed" % [_sections, _passed, _failed])
+	if _passed + _failed != CHECKS or _sections != SECTIONS:
+		print("ERROR: expected %d sections %d checks" % [SECTIONS, CHECKS])
 		get_tree().quit(1)
 		return
 	get_tree().quit(0 if _failed == 0 else 1)

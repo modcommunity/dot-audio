@@ -40,14 +40,16 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `tools/sound_compare.tscn` | ear-check the `slide_*` loops at several speeds; `-- --levels` (headless) prints each loop's peak/RMS via ffmpeg |
 | `runtime/dot_audio_manager.gd` | `DotAudioManager`: ids in, limits, `listener_position`, `roll_source`, `play_music`, `duck`, `shape`/`voice` a playing handle |
 | `dot_audio_api.gd` | the API level (`DotAddonApi`); bump `LEVEL` for anything a game can newly call |
-| `examples/audio_selftest.tscn` | the suite; needs no sound card |
+| `examples/audio_selftest.tscn` | the main suite (sections from `examples/selftest/`); needs no sound card |
+| `examples/ambience_bus_selftest.tscn` | the Ambience bus follows the Effects slider |
+| `examples/box_sounds_selftest.tscn` | `DotBoxSounds`: slots, stock fallback, effect end, approach edge |
 | `examples/exit_leak_probe.tscn` | loads dot-audio as a game's suite does and quits; the suite runs it as a child and reads its stderr |
 
 Paths except `examples/` and the repository's `tools/make_ambience.py` (regenerates the beds) are in `addons/dot_audio/`.
 
 ## Running and testing
 
-The family's two steps ([game-dev/CLAUDE.md](../../CLAUDE.md#validating-anything)), then `timeout 120 godot --headless --path . res://examples/audio_selftest.tscn`. `CHECKS` is a total as well as a section count, because a script error aborts one test, not the run.
+The family's two steps ([game-dev/CLAUDE.md](../../CLAUDE.md#validating-anything)), then each of `audio_selftest`, `ambience_bus_selftest` and `box_sounds_selftest` (`timeout 120 godot --headless --path . res://examples/<suite>.tscn`). `CHECKS` is a total as well as a section count, because a script error aborts one test, not the run.
 
 A green run prints "3 ObjectDB instances were leaked at exit": `--verbose` names them as `AudioStreamPlaybackWAV` / `AudioStreamGeneratorPlayback` objects from the synth section's `play()` calls, which the dummy driver creates and never mixes. Stopping every voice and freeing the host does not change it. A count that grows without new `play()` calls in the suite is a real leak, and any "resources still in use" line is one (section 14 runs `examples/exit_leak_probe.tscn` in a child process and fails on it). [history](docs/history.md#a-static-cache-kept-a-games-whole-run-alive-at-exit-2026-10-12)
 

@@ -49,7 +49,7 @@ Paths except `examples/` and the repository's `tools/make_ambience.py` (regenera
 
 ## Running and testing
 
-The family's two steps ([game-dev/CLAUDE.md](../../CLAUDE.md#validating-anything)), then each of `audio_selftest`, `ambience_bus_selftest` and `box_sounds_selftest` (`timeout 120 godot --headless --path . res://examples/<suite>.tscn`). `CHECKS` is a total as well as a section count, because a script error aborts one test, not the run.
+The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything)), then each of `audio_selftest`, `ambience_bus_selftest` and `box_sounds_selftest` (`timeout 120 godot --headless --path . res://examples/<suite>.tscn`). `CHECKS` is a total as well as a section count, because a script error aborts one test, not the run.
 
 A green run prints "3 ObjectDB instances were leaked at exit": `--verbose` names them as `AudioStreamPlaybackWAV` / `AudioStreamGeneratorPlayback` objects from the synth section's `play()` calls, which the dummy driver creates and never mixes. Stopping every voice and freeing the host does not change it. A count that grows without new `play()` calls in the suite is a real leak, and any "resources still in use" line is one (section 14 runs `examples/exit_leak_probe.tscn` in a child process and fails on it). [history](docs/history.md#a-static-cache-kept-a-games-whole-run-alive-at-exit-2026-10-12)
 

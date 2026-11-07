@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://examples/stock_pack_selftest.gd" id="1_sps"]
+
+[node name="StockPackSelftest" type="Node"]
+script = ExtResource("1_sps")

@@ -58,16 +58,43 @@ const _FOOTSTEP_GAIN := {
 }
 
 
+## Folders (each laid out like `stock/`) the beds and the stock mood set are looked for in when this build lacks them.
+## The client shell leaves `stock/ambience` and `stock/moods` out of its pck; a host adds the mounted audio pack's folder here.
+static var fallback_roots: PackedStringArray = PackedStringArray()
+
+## When set, [method directory] answers this instead: a suite stands in for a shell that lacks the stock files.
+static var directory_override := ""
+
+
+## [param rel] under `stock/`: here when this build carries it, else the first of [member fallback_roots] that does,
+## else here (so a missing file fails at its own path). A `.ogg` counts as present by its import remap.
+static func resolve(rel: String) -> String:
+	var here := directory().path_join(rel)
+	if _present(here) or fallback_roots.is_empty():
+		return here
+	for r in fallback_roots:
+		var cand := r.trim_suffix("/").path_join(rel)
+		if _present(cand):
+			return cand
+	return here
+
+
+static func _present(path: String) -> bool:
+	return ResourceLoader.exists(path) or FileAccess.file_exists(path)
+
+
 ## Where the files are, found from this script so a delivered pack mounted under another
 ## root still finds them.
 static func directory() -> String:
+	if not directory_override.is_empty():
+		return directory_override
 	var here: String = (DotAudioStock as Script).resource_path
 	return here.get_base_dir().get_base_dir().path_join("stock")
 
 
 ## The stock mood set for [DotAmbience] (`moods.json` and its files, CC0, `moods/CREDITS.md`).
 static func moods_directory() -> String:
-	return directory().path_join("moods")
+	return resolve("moods/moods.json").get_base_dir()
 
 
 ## A surface name from anything: a canonical one, an alias, or a longer name containing one
@@ -227,11 +254,10 @@ static func landing_id(impact: float) -> StringName:
 
 static func ambience_defs() -> Array[DotAudioDef]:
 	var out: Array[DotAudioDef] = []
-	var dir := directory().path_join("ambience")
 	for b in BEDS:
 		var d := DotAudioDef.new()
 		d.id = b
-		d.path = dir.path_join(String(b) + ".ogg")
+		d.path = resolve("ambience/%s.ogg" % b)
 		d.kind = DotAudioDef.Kind.FLAT
 		d.bus = &"Ambience"
 		d.looping = true

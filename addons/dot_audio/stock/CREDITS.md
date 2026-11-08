@@ -99,3 +99,18 @@ The layered shots (`attack`, `body`, `tail_*`, `far` per weapon class, plus `sup
 | Launcher, minigun and beam sets (2026-11-03) | as the `weapons/` rows above: `launcher_fire_N` (rubberduck, 25 CC0 bang / firework SFX, cannon shots), `minigun_fire_N` (The Free Firearm Sound Library), `beam_fire_N` (cyklon698 Alien Blaster, celestialghost8 Laser weapon burst fire, Zane Little Music Theremin Laser SFX) | https://opengameart.org/content/25-cc0-bang-firework-sfx , https://opengameart.org/content/the-free-firearm-sound-library , https://opengameart.org/content/alien-blaster | CC0 | `launcher/`, `minigun/`, `beam/` (5 variants each, `make_shot_layers.py --only launcher minigun beam`) |
 | Charge, swing and throw sets (2026-11-03) | charge: Kenney (`laserLarge_000-004`); swing, throw: the stock `swing_N` and `throw_N` (Medieval sound effects, Ben Jaszczak and Brian Nelson, as the `weapons/` row above). The charge set uses no `charge_fire` file, whose source needs attribution | https://kenney.nl/assets/sci-fi-sounds , https://opengameart.org/content/medieval-sound-effects-weapon-textures | CC0 | `charge/`, `swing/`, `throw/` (5 variants each, `make_shot_layers.py --only charge swing throw`; swing and throw tails are 9 and 7 dB lower, a whoosh excites a room less than a shot) |
 | Eldritch Grim impacts and gun FX | Eldritch Grim | https://opengameart.org/content/impactsgunsfx | CC0 | `Pistol 1-3` (light, magnum), `Shotgun 1-3` (shotgun) |
+
+## weapons/cue_*
+
+The 37 reload and handling cues (`cue_mag_out`, `cue_bolt_back`, `cue_cyl_open`, `cue_pump_back` and so on, three variants each) are synthesised by `tools/make_reload_cues.py` using `tools/foley.py` from a fixed seed: damped-resonance strikes, filtered-noise bursts, friction slides and thuds. No recording and no third-party sample is used. Dedicated to the public domain under CC0 1.0 by the dot-audio authors. They are levelled to three loudness tiers (loud -21, mid -24, soft -29 LUFS active, ceiling -2 dB).
+
+## Level pass (2026-11-08)
+
+`tools/polish_weapon_stock.py` removed DC offset, trimmed leading silence, faded unfaded tails, levelled `weapons/` per category and soft-limited true-peak overs in `weapons/` and `shots/`. `tools/audit_weapon_audio.py` measures peak, true peak, K-weighted loudness, DC, head, tail and duplicates: 318 of 814 files flagged before, 24 of 925 after (the rest are very quiet outdoor tails by design).
+
+## voices/* (2026-11-08)
+
+`shot`, `shot_heavy`, `shot_tight`, `impact`, `blip`, `hurt`, `die`, `boom`, three variants each (24 files, about 190 KB).
+Self-synthesised by `tools/make_voice_stock.py` (numpy/scipy through `tools/foley.py`: noise bursts, falling-sine thuds,
+modal strikes, a formant-filtered falling pitch for hurt/die). No recordings, no third-party material: CC0 as the rest of this
+pack. Levelled by K-weighted active loudness, ceiling -2 dBFS. Used when `DotAudioSynth.bank(..., stock = true)`.

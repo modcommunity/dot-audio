@@ -89,9 +89,20 @@ func _stock_weapons() -> void:
 			if not ResourceLoader.exists(p):
 				wmissing.append(p)
 	_check(wmissing.is_empty(), "every weapon file is there (%s)" % ", ".join(wmissing))
+	# Stock voices: opt-in, a real file per voice, the sine-sweep bake unchanged by default.
+	var vcat := DotAudioCatalogue.new()
+	var vd := DotAudioDef.new()
+	vd.id = &"v_shot"
+	vd.path = "res://v/shot.ogg"
+	vcat.add(vd)
+	var v_off := DotAudioSynth.bank(vcat, {&"v_shot": DotAudioSynth.Voice.SHOT})
+	var v_on := DotAudioSynth.bank(vcat, {&"v_shot": DotAudioSynth.Voice.SHOT}, true)
+	_check(v_off[&"v_shot"] is AudioStreamWAV, "the voice bank is the sine-sweep bake unless stock is asked for")
+	_check(v_on[&"v_shot"] is AudioStreamOggVorbis and v_on["res://v/shot.ogg"] is AudioStreamOggVorbis, "stock = true answers with the synthesised file")
 	var on_disk := 0
 	for f in DirAccess.get_files_at(DotAudioWeaponStock.directory()):
-		if f.ends_with(".ogg"):
+		# cue_* are reload/handling cues the rig plays by name (DotWeaponSound.pick finds them on disk); no catalogue def.
+		if f.ends_with(".ogg") and not f.begins_with("cue_"):
 			on_disk += 1
 	var listed := 0
 	for n: StringName in DotAudioWeaponStock.COUNTS:

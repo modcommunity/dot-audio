@@ -22,5 +22,6 @@ extends RefCounted
 # 9: DotAudioSurf, DotAudioSurfRules and the stock surf glide (DotAudioStock.SURF_GLIDE_ID);
 #    DotAudioFootsteps.surf_rules silences steps and landings on a ramp.
 # 11: DotShotRules.tail_voices (snd_shot_tail_voices) and DotShotPlayer.tail_voices(): a cap on stacked room tails.
-const LEVEL := 12
+# 13: DotAudioSynth.bank(..., stock): the opt-in flag that swaps the sine-sweep voices for the self-synthesised stock/voices.
+const LEVEL := 13
 const OLDEST := 1

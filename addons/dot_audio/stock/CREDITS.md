@@ -107,3 +107,10 @@ The 37 reload and handling cues (`cue_mag_out`, `cue_bolt_back`, `cue_cyl_open`,
 ## Level pass (2026-11-08)
 
 `tools/polish_weapon_stock.py` removed DC offset, trimmed leading silence, faded unfaded tails, levelled `weapons/` per category and soft-limited true-peak overs in `weapons/` and `shots/`. `tools/audit_weapon_audio.py` measures peak, true peak, K-weighted loudness, DC, head, tail and duplicates: 318 of 814 files flagged before, 24 of 925 after (the rest are very quiet outdoor tails by design).
+
+## voices/* (2026-11-08)
+
+`shot`, `shot_heavy`, `shot_tight`, `impact`, `blip`, `hurt`, `die`, `boom`, three variants each (24 files, about 190 KB).
+Self-synthesised by `tools/make_voice_stock.py` (numpy/scipy through `tools/foley.py`: noise bursts, falling-sine thuds,
+modal strikes, a formant-filtered falling pitch for hurt/die). No recordings, no third-party material: CC0 as the rest of this
+pack. Levelled by K-weighted active loudness, ceiling -2 dBFS. Used when `DotAudioSynth.bank(..., stock = true)`.

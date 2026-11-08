@@ -176,6 +176,30 @@ static func bake(
 	return stream
 
 
+## Voice -> file stem under [code]stock/voices/[/code] (tools/make_voice_stock.py). Voices without one (SPAWN, PICKUP, CLICK, STEP, DENY) stay synthesised.
+const STOCK_VOICES := {
+	Voice.SHOT: "shot", Voice.SHOT_HEAVY: "shot_heavy", Voice.SHOT_TIGHT: "shot_tight", Voice.IMPACT: "impact",
+	Voice.BLIP: "blip", Voice.HURT: "hurt", Voice.DIE: "die", Voice.BOOM: "boom",
+}
+const STOCK_VARIANTS := 3
+const STOCK_DIR := "res://addons/dot_audio/stock/voices/"
+
+
+## With [param stock] on, a voice that has a self-synthesised recording (see CREDITS) returns it, the variant picked by
+## [param salt] so a path always maps to the same file; otherwise, and when the file is absent, the sine-sweep bake.
+## Off by default: the bank's contract (AudioStreamWAV entries) is what the existing tests pin.
+static func _stock_or_voice(kind: int, salt: int, stock: bool, r: Array = []) -> AudioStream:
+	if stock and STOCK_VOICES.has(kind):
+		var path := "%s%s_%d.ogg" % [STOCK_DIR, STOCK_VOICES[kind], absi(salt) % STOCK_VARIANTS]
+		if ResourceLoader.exists(path):
+			var s = load(path)
+			if s is AudioStream:
+				return s
+	if r.is_empty():
+		return voice(kind)
+	return bake(r[0], r[1], r[2], r[3], r[4], r[5], salt)
+
+
 ## Bakes a stand-in for every id in [param recipes], keyed the way
 ## [DotAudioSinkGodot.bank] reads it.
 ##
@@ -188,7 +212,9 @@ static func bake(
 ## exists partly to stop a rifle sounding like a metronome, and a bank that collapsed three
 ## variants onto one stream would quietly undo that — the def would still pick a variant,
 ## and all three would resolve to the same bytes.
-static func bank(catalogue: DotAudioCatalogue, recipes: Dictionary) -> Dictionary:
+##
+## [param stock] swaps the sine-sweep voices for the synthesised recordings in stock/voices where there is one.
+static func bank(catalogue: DotAudioCatalogue, recipes: Dictionary, stock: bool = false) -> Dictionary:
 	var out := {}
 	var missing: Array[String] = []
 
@@ -205,7 +231,7 @@ static func bank(catalogue: DotAudioCatalogue, recipes: Dictionary) -> Dictionar
 		# The id entry stands in for the def as a whole. The sink reads path first, so
 		# this is what answers a def with no variants, and the fallback for one whose
 		# chosen variant has no entry of its own.
-		out[name] = voice(kind)
+		out[name] = _stock_or_voice(kind, 0, stock)
 
 		var paths: Array[String] = []
 		if not def.path.is_empty():
@@ -218,7 +244,7 @@ static func bank(catalogue: DotAudioCatalogue, recipes: Dictionary) -> Dictionar
 			var r: Array = RECIPES.get(kind, RECIPES[Voice.CLICK])
 			# Salted by the path, so two variants of one weapon differ -- and the SAME
 			# path always bakes the same bytes, which is what keeps a replay honest.
-			out[p] = bake(r[0], r[1], r[2], r[3], r[4], r[5], hash(p))
+			out[p] = _stock_or_voice(kind, hash(p), stock, r)
 
 	if not missing.is_empty():
 		DotLog.warn(

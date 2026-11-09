@@ -136,17 +136,20 @@ func _configure(player: Node, kind: int, request: Dictionary) -> void:
 ## the sound is silence. Every file dot-audio itself ships (the stock footsteps and beds)
 ## would be silent for a player until a new shell, which is exactly what addon packs exist
 ## to avoid. So when the marker's output is missing and the source file is in the pack, it is
-## decoded from its bytes (Ogg Vorbis, WAV or MP3), once per path.
+## decoded from its bytes (Ogg Vorbis, WAV or MP3), once per path. The existence and marker
+## checks for an imported sound are also made once per path (a play read the marker from disk).
 ##
 ## The marker is read first rather than trying [code]load[/code] and falling back, because a
 ## failed load prints an engine error per attempt, which on a footstep is several a second.
 static func stream_at(path: String) -> AudioStream:
 	if _RAW.streams.has(path):
 		return _RAW.streams[path]
-	if ResourceLoader.exists(path) and _import_output_present(path):
+	if _RAW.imported.has(path) or (ResourceLoader.exists(path) and _import_output_present(path)):
 		var loaded := load(path) as AudioStream
 		if loaded != null:
+			_RAW.imported[path] = true
 			return loaded
+		_RAW.imported.erase(path)
 	if not FileAccess.file_exists(path):
 		return null
 	var raw: AudioStream = null

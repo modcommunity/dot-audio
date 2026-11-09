@@ -17,8 +17,14 @@ extends RefCounted
 
 static var streams: Dictionary = {}
 
+## Paths whose imported output is there (path -> true): [method DotAudioSinkGodot.stream_at]
+## checks the file and reads its [code].import[/code] marker once per path, not on every play.
+## Holds no resource, so nothing here outlives a run.
+static var imported: Dictionary = {}
+
 
 ## Drops every cached stream so a process can exit with none still in use. Call it after the
 ## last manager has left the tree and before `quit()`; streams are decoded again on demand.
 static func clear() -> void:
 	streams.clear()
+	imported.clear()

@@ -115,6 +115,12 @@ Self-synthesised by `tools/make_voice_stock.py` (numpy/scipy through `tools/fole
 modal strikes, a formant-filtered falling pitch for hurt/die). No recordings, no third-party material: CC0 as the rest of this
 pack. Levelled by K-weighted active loudness, ceiling -2 dBFS. Used when `DotAudioSynth.bank(..., stock = true)`.
 
+Retuned 2026-11-08 (owner feedback: the hurt grunt was weird and too loud, the hit confirm too high and harsh): `blip` is now a
+dull modal wood tick near 1.1 kHz with a low knock, lowpassed at 3.5 kHz (was a 2.7 kHz aluminium ping, spectral centroid about
+4.7 kHz, now about 0.9 kHz) at -25 LUFS active (was -21); `hurt` is a short breathy male-range "uh" (175 falling to 80 Hz, formants
+near 550 Hz and 1.1 kHz, 14 ms attack, centroid about 0.8 kHz, was 1.0 kHz and a bright 300 Hz start) at -27 LUFS (was -22).
+Same generator, still self-synthesised and CC0.
+
 ## interface/, announcer/, body/ (2026-11-10)
 
 Kenney packs, CC0 1.0 ([licence](http://creativecommons.org/publicdomain/zero/1.0/)), from the Kenney Game Assets All-in-1 3.7.0 bundle. Renamed; files that were stereo were converted to mono Ogg Vorbis (q6), otherwise unchanged. Interface cues, a spoken announcer and body hits for a game's hit marker, medals, flag and vote cues, spawn, hurt and death; which file plays for what is each game's decision.

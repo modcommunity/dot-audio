@@ -56,21 +56,27 @@ def impact(r):
 
 
 def blip(r):
-    """Hit marker: a bright metallic tick, short enough to not mask the shot that caused it."""
-    return F.mix([(0, F.strike(r, "alu", 2700 * r.uniform(0.97, 1.04), 0.09, 1.0, 0.5, 0.9), 0),
-                  (0, F.noise_burst(r, 0.006, 4000, 12000, 0.0012), -6)], 0.1)
+    """Hit marker: a dull wooden tick, round rather than bright, so it confirms without piercing (the old aluminium
+    ping at 2.7 kHz was too high and thin). Body near 1.1 kHz, a low knock under it, everything lowpassed at 3.5 kHz."""
+    x = F.mix([(0, F.strike(r, "wood", 1100 * r.uniform(0.97, 1.04), 0.08, 1.0, 1.3, 0.15), 0),
+               (0, F.thud(r, 380, 210, 0.06, 0.018, 0.8, 0.15), -3)], 0.1)
+    return F.lowpass(x, 3500)
 
 
 def hurt(r):
-    n = F.n_samples(0.32)
+    """A short, low, breathy 'uh': a male-range voice (about 175 falling to 80 Hz) through two soft formants near 550 and
+    1.1 kHz, a 14 ms attack so it does not bark, a little breath and a dull chest thump. Not a scream: it is heard often."""
+    n = F.n_samples(0.3)
     t = np.arange(n) / F.RATE
-    f0 = 210 * np.exp(-t / 0.3) + 90
+    f0 = 95 * np.exp(-t / 0.2) + 82
     ph = 2 * np.pi * np.cumsum(f0) / F.RATE
-    voiced = sum(np.sin(k * ph) / k for k in range(1, 12))
-    vowel = F.bandpass(voiced, 500, 900) + 0.7 * F.bandpass(voiced, 1400, 2000)
-    vowel *= F.env_exp(n, 0.14, 0.006)
+    voiced = sum(np.sin(k * ph) / k ** 1.3 for k in range(1, 15))
+    vowel = F.bandpass(voiced, 420, 700) + 0.5 * F.bandpass(voiced, 900, 1300)
+    vowel = F.lowpass(vowel, 2200) * F.env_exp(n, 0.1, 0.014)
     vowel /= max(np.max(np.abs(vowel)), 1e-9)
-    return F.mix([(0, vowel, 0), (0, F.thud(r, 150, 60, 0.12, 0.04, 0.9, 0.5), -3), (0, F.noise_burst(r, 0.03, 600, 5000, 0.01), -8)], 0.35)
+    breath = F.bandpass(r.standard_normal(n), 250, 1500) * F.env_exp(n, 0.07, 0.02)
+    breath /= max(np.max(np.abs(breath)), 1e-9)
+    return F.mix([(0, vowel, 0), (0, breath, -20), (0, F.thud(r, 130, 55, 0.12, 0.04, 0.9, 0.4), -4)], 0.32)
 
 
 def die(r):
@@ -95,7 +101,7 @@ def boom(r):
 
 
 VOICES = {"shot": (lambda r: shot(r), -18.0), "shot_heavy": (lambda r: shot(r, True), -17.0), "shot_tight": (tight, -19.0),
-          "impact": (impact, -22.0), "blip": (blip, -21.0), "hurt": (hurt, -22.0), "die": (die, -22.0), "boom": (boom, -16.0)}
+          "impact": (impact, -22.0), "blip": (blip, -25.0), "hurt": (hurt, -27.0), "die": (die, -22.0), "boom": (boom, -16.0)}
 
 
 def level(x, target):

@@ -12,8 +12,8 @@ extends "selftest/selftest_shots.gd"
 ## godot --headless --path . res://examples/audio_selftest.tscn
 ## [/codeblock]
 
-const SECTIONS := 21
-const CHECKS := 309
+const SECTIONS := 22
+const CHECKS := 314
 
 func _ready() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
@@ -46,6 +46,7 @@ func _run() -> void:
 	_test_creepy_ambience()
 	_test_ambience_director()
 	_test_raw_fallback()
+	_test_hurt_sound()
 	_test_nothing_kept_alive_at_exit()
 
 	_line("")
@@ -660,6 +661,15 @@ func _test_synth_loop(host: Node, sink: DotAudioSinkGodot, bank: Dictionary) -> 
 	host.queue_free()
 
 # --- 9 ----------------------------------------------------------------------
+
+func _test_hurt_sound() -> void:
+	_section("The hurt grunt scales with damage and yields to a death cry")
+	_check(DotHurtSound.volume_for(0.0) == DotHurtSound.MIN_VOLUME and DotHurtSound.volume_for(400.0) == 1.0, "a scratch is quiet, a heavy hit full")
+	_check(DotHurtSound.pitch_for(1.0) > DotHurtSound.pitch_for(40.0), "a graze is higher than a heavy hit")
+	var m := _manager(_catalogue())
+	_check(DotHurtSound.play(m, &"rifle", 20.0) != 0, "a non-lethal hit plays")
+	_check(DotHurtSound.play(m, &"rifle", 20.0, true) == 0, "a lethal hit leaves the grunt to the death cry")
+	_check(DotHurtSound.play(null, &"rifle", 20.0) == 0, "no audio is silence, not an error")
 
 func _test_shaping() -> void:
 	_section("A playing voice is shaped, not restarted")

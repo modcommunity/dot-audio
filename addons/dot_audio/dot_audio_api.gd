@@ -23,5 +23,6 @@ extends RefCounted
 #    DotAudioFootsteps.surf_rules silences steps and landings on a ramp.
 # 11: DotShotRules.tail_voices (snd_shot_tail_voices) and DotShotPlayer.tail_voices(): a cap on stacked room tails.
 # 13: DotAudioSynth.bank(..., stock): the opt-in flag that swaps the sine-sweep voices for the self-synthesised stock/voices.
-const LEVEL := 13
+# 14: DotHurtSound (the damage-scaled hurt grunt that yields to a lethal hit's death cry).
+const LEVEL := 14
 const OLDEST := 1

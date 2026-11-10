@@ -171,6 +171,25 @@ func _test_footsteps() -> void:
 	steps.advance(body, 1.0 / 60.0)
 	_check(heard.is_empty(), "a teleport is not a walk")
 
+	# The body is some 70 m from a listener at the origin by now.
+	heard.clear()
+	var asked := [0]
+	steps.track(body, {"grounded": func() -> bool:
+		asked[0] += 1
+		return true})
+	steps.hear_distance = 36.0
+	for i in 120:
+		body.global_position += Vector3(4.0 / 60.0, 0, 0)
+		steps.advance(body, 1.0 / 60.0)
+	_check(heard.is_empty() and asked[0] == 0, "past hear_distance a body is not stepped, nor its ground asked (%d steps, %d asks)" % [heard.size(), asked[0]])
+	m.listener_position = body.global_position + Vector3(10, 0, 0)
+	for i in 120:
+		body.global_position += Vector3(4.0 / 60.0, 0, 0)
+		steps.advance(body, 1.0 / 60.0)
+	_check(heard.size() >= 3 and heard.size() <= 6, "and steps again once the listener is near (%d)" % heard.size())
+	m.listener_position = Vector3.ZERO
+	steps.hear_distance = 0.0
+
 	_check_surface_lookup(steps, body)
 	body.queue_free()
 	steps.queue_free()
@@ -424,6 +443,80 @@ func _test_raw_fallback() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(marker))
 	DotAudioSinkGodot.clear_streams()
 	_check(DotAudioSinkGodot._RAW.streams.is_empty(), "clear_streams() drops the cache so a process can exit with no stream in use")
+
+
+func _test_cheap_starts() -> void:
+	_section("A play resolves its path once, and a short compressed sound is decoded once")
+	var path := DotAudioStock.directory().path_join("footsteps/footstep_wood_0.ogg")
+	var source := DotAudioSinkGodot.stream_at(path)
+	var rate := int(AudioServer.get_mix_rate())
+	var out: Array = []
+	DotAudioSinkGodot._PCM.decode(source, rate, out)
+	var wav := out[0] as AudioStreamWAV if out.size() == 1 else null
+	_check(wav != null and absf(wav.get_length() - source.get_length()) < 0.02, "the decoded copy is as long as its source (%.3f s)" % (wav.get_length() if wav != null else 0.0))
+	var peak := 0
+	var pinned := 0
+	if wav != null:
+		for i in range(0, wav.data.size() - 1, 2):
+			var sample := absi(wav.data.decode_s16(i))
+			peak = maxi(peak, sample)
+			pinned += 1 if sample >= 32767 else 0
+	# The stock step's decoder overshoots full scale; the copy keeps that under its headroom.
+	var top := 0.0
+	var playback := source.instantiate_playback()
+	playback.start(0.0)
+	for f in playback.mix_audio(1.0, int(ceil(source.get_length() * float(rate)))):
+		top = maxf(top, absf(f.x))
+	var expected := int(top * 0.5 * 32767.0)
+	_check(pinned == 0 and absi(peak - expected) <= 2, "and holds the sound, overshoot and all, unclipped (peak %d for a source peak of %.3f)" % [peak, top])
+	_check(wav != null and not wav.stereo, "a mono source stays one channel")
+
+	var host := Node.new()
+	add_child(host)
+	var sink := DotAudioSinkGodot.new(host, 4)
+	var request := {"id": "step", "path": path, "kind": DotAudioDef.Kind.FLAT, "priority": 50}
+	var first := sink.play(request)
+	_check(_cheap_stream(host, first) == source, "the first play is the compressed stream, so nothing waits on the decode")
+	_check(sink._resolved.get(path) == source, "and the path is resolved once, not read from disk per play")
+	sink.close()
+	var second := sink.play(request)
+	_check(_cheap_stream(host, second) is AudioStreamWAV, "once decoded, the next play starts from PCM")
+	var made_up := 0.0
+	for child in host.get_children():
+		if int(child.get_meta(&"dot_audio_handle", 0)) == second:
+			made_up = float(child.get("volume_db"))
+	_check(absf(made_up - 6.02) < 0.01 and absf(float(sink.voice(second)["volume_db"])) < 0.001, "at the same level: its headroom is made up on the player (%+.2f dB) and voice() reports the request's" % made_up)
+	sink.shape(second, -3.0, 1.0)
+	_check(absf(float(sink.voice(second)["volume_db"]) + 3.0) < 0.001, "and shape() keeps that make-up")
+	var loop := request.duplicate()
+	loop["looping"] = true
+	var looped := _cheap_stream(host, sink.play(loop))
+	_check(looped is AudioStreamOggVorbis, "a looping play keeps the compressed stream and its exact seam")
+
+	sink.pcm_max_seconds = 0.0
+	var other := DotAudioStock.directory().path_join("footsteps/footstep_wood_1.ogg")
+	var _h := sink.play({"id": "step", "path": other, "kind": DotAudioDef.Kind.FLAT, "priority": 50})
+	sink.close()
+	_check(not sink._pcm.has(other) and sink._pcm_jobs.is_empty(), "pcm_max_seconds 0 turns the decoding off")
+
+	sink.bank = {"res://dot_audio_probe/absent.ogg": DotAudioSynth.bake(300.0, 300.0, 0.05, 0.2, 0.0)}
+	var absent := {"id": "x", "path": "res://dot_audio_probe/absent.ogg", "kind": DotAudioDef.Kind.FLAT, "priority": 90}
+	_check(sink.play(absent) != 0 and sink._absent_ms.has(absent["path"]), "a path with no file plays its stand-in and is remembered as absent")
+	sink._absent_ms[absent["path"]] = Time.get_ticks_msec() - DotAudioSinkGodot.ABSENT_RECHECK_MS
+	sink.bank.erase(absent["path"])
+	_check(sink.play(absent) == 0 and int(sink._absent_ms[absent["path"]]) > Time.get_ticks_msec() - 1000, "and the disk is asked again once that is stale, so a file that arrives late wins")
+
+	sink.stop_all()
+	sink.close()
+	host.queue_free()
+
+
+func _cheap_stream(host: Node, handle: int) -> AudioStream:
+	for child in host.get_children():
+		if int(child.get_meta(&"dot_audio_handle", 0)) == handle:
+			return child.get("stream") as AudioStream
+	return null
+
 
 # Section 14
 

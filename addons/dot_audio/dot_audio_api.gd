@@ -24,5 +24,7 @@ extends RefCounted
 # 11: DotShotRules.tail_voices (snd_shot_tail_voices) and DotShotPlayer.tail_voices(): a cap on stacked room tails.
 # 13: DotAudioSynth.bank(..., stock): the opt-in flag that swaps the sine-sweep voices for the self-synthesised stock/voices.
 # 14: DotHurtSound (the damage-scaled hurt grunt that yields to a lethal hit's death cry).
-const LEVEL := 14
+# 15: DotAudioSink.close(); DotAudioSinkGodot.pcm_max_seconds and pcm_budget_bytes; DotAudioFootsteps.hear_distance (a short compressed
+#     stream is decoded to PCM off the game thread after its first play, so starting it again is cheap).
+const LEVEL := 15
 const OLDEST := 1

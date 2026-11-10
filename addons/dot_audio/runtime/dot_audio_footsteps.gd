@@ -52,6 +52,11 @@ var default_surface: StringName = &"concrete"
 ## what it is made of tells the footsteps too.
 var surface_metas: Array[StringName] = [&"surface", &"dot_fps_surface"]
 
+## Metres from the manager's listener past which a body is not stepped at all: no ground
+## ray, no [signal stepped], no play. 0 steps every body. Set it a little past the loudest
+## step's `max_distance` in a game whose steps are only ever heard, never read by rules.
+@export_range(0.0, 500.0, 0.5) var hear_distance: float = 0.0
+
 ## Physics layers the ground ray sees.
 @export_flags_3d_physics var ground_mask: int = 0xFFFFFFFF
 
@@ -124,6 +129,13 @@ func advance(body: Node3D, delta: float) -> void:
 	# A respawn or a correction is not a walk.
 	if moved > 4.0 or delta <= 0.0:
 		st["travelled"] = 0.0
+		return
+	var out_of_earshot := hear_distance > 0.0 and manager != null \
+		and manager.listener_position.distance_squared_to(pos) > hear_distance * hear_distance
+	if out_of_earshot:
+		st["travelled"] = 0.0
+		st["air"] = 0.0
+		st["grounded"] = true
 		return
 	if surf_rules != null and surf_rules.mute_steps and surf_rules.is_surfing(body):
 		st["travelled"] = 0.0

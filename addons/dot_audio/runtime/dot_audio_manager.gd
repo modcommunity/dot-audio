@@ -127,6 +127,7 @@ func setup() -> DotResult:
 func _exit_tree() -> void:
 	if sink != null:
 		sink.stop_all()
+		sink.close()
 	if register_as_service:
 		DotRegistry.unregister_instance(SERVICE, self)
 
@@ -351,7 +352,10 @@ func _process(_delta: float) -> void:
 func _reap() -> void:
 	if sink == null:
 		return
-	for h in _playing.keys().duplicate():
+	if _playing.is_empty():
+		return
+	# keys() is already a copy, so releasing inside the loop is safe.
+	for h: int in _playing.keys():
 		if not sink.is_playing(h):
 			_release(h)
 

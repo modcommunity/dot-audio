@@ -24,7 +24,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `core/dot_audio_catalogue.gd` | `DotAudioCatalogue`: `validate()` (the document), `missing_files()` (the disk) |
 | `core/dot_audio_mixer.gd` | `DotAudioMixer`: sliders and the `linear_to_db` curve, a `DotConfig` |
 | `core/dot_audio_synth.gd` | `DotAudioSynth`: thirteen role voices baked to `AudioStreamWAV` |
-| `sink/` | `DotAudioSink` (`device_present()`), `DotAudioSinkGodot` (pool, stealing, `bank`), `DotAudioSinkNull`, `dot_audio_raw_streams.gd` (`stream_at`'s cache, by path) |
+| `sink/` | `DotAudioSink` (`device_present()`), `DotAudioSinkGodot` (pool, stealing, `bank`), `DotAudioSinkNull`, `dot_audio_raw_streams.gd` (`stream_at`'s cache, by path), `dot_audio_pcm.gd` (the off-thread decode of a short compressed stream to PCM) |
 | `core/dot_audio_stock.gd` | `DotAudioStock`: the stock footsteps and beds as defs, `add_to`, surface names and aliases |
 | `core/dot_audio_loudness.gd` | `DotAudioLoudness`: the standard's numbers, `install_limiter` |
 | `runtime/dot_audio_footsteps.gd` | `DotAudioFootsteps`: steps by distance and surface for any number of bodies; `stepped` |
@@ -41,6 +41,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `runtime/dot_audio_manager.gd` | `DotAudioManager`: ids in, limits, `listener_position`, `roll_source`, `play_music`, `duck`, `shape`/`voice` a playing handle |
 | `dot_audio_api.gd` | the API level (`DotAddonApi`); bump `LEVEL` for anything a game can newly call |
 | `examples/audio_selftest.tscn` | the main suite (sections from `examples/selftest/`); needs no sound card |
+| `tools/play_cost_bench.tscn` | what one `play_at()` costs the game thread through the real sink (file, banked, culled), headless; run it before and after touching the sink's start path |
 | `examples/ambience_bus_selftest.tscn` | the Ambience bus follows the Effects slider |
 | `examples/box_sounds_selftest.tscn` | `DotBoxSounds`: slots, stock fallback, effect end, approach edge |
 | `examples/exit_leak_probe.tscn` | loads dot-audio as a game's suite does and quits; the suite runs it as a child and reads its stderr |
@@ -64,6 +65,8 @@ A green run prints "3 ObjectDB instances were leaked at exit": `--verbose` names
 - Variants and pitch come from a roll; give `roll_source` a `DotRandomStream` for reproducible sound. [design](docs/design.md#variation-belongs-in-the-document)
 - A missing sound is a debug-logged refusal, never an error. [design](docs/design.md#a-missing-sound-is-silence-not-an-error)
 - Change a playing voice with `manager.shape(h, volume_scale, pitch_scale)` (play()'s units, def gain and rolled pitch kept), never by restarting it or subclassing the Godot sink. [design](docs/design.md#a-playing-voice-is-shaped-in-plays-units)
+- Starting a compressed voice is the cost, not mixing it: the engine sets a decoder up on every `play()` (about a millisecond for a stock step, measured). So `DotAudioSinkGodot` decodes a non-looping stream of at most `pcm_max_seconds` to PCM on a worker thread after its first play and starts later plays from that; the copy is stored at half scale and made up on the player, because a decoder overshoots full scale. Keep new start paths going through `_stream_for`, and keep `close()` collecting the tasks.
+- `DotAudioFootsteps.hear_distance` is off by default because `stepped` is a signal rules may read; a game whose steps are only heard sets it.
 - No `static var` written by its own static function in a script that extends another (the sinks): the engine's 4.7.2 exit teardown then kept a game's whole run alive at exit. Such a cache is a script of its own (`sink/dot_audio_raw_streams.gd`). [history](docs/history.md#a-static-cache-kept-a-games-whole-run-alive-at-exit-2026-10-12)
 - A process that ran `stream_at` calls `DotAudioSinkGodot.clear_streams()` before `quit()` (after the last manager left the tree), or the cached streams are "resources still in use" at exit. [history](docs/history.md#a-static-cache-kept-a-games-whole-run-alive-at-exit-2026-10-12)
 - Loop a copy of the stream, never the shared one. [design](docs/design.md#looping-copies-the-stream)

@@ -39,6 +39,12 @@ func stop_all() -> void:
 	pass
 
 
+## Finishes whatever the sink has running off the game thread. Called as its manager leaves
+## the tree; the sink stays usable after it.
+func close() -> void:
+	pass
+
+
 ## Whether [param handle] is still sounding.
 func is_playing(_handle: int) -> bool:
 	return false

@@ -49,6 +49,36 @@ var _loop_copies: Dictionary = {}
 ## own, never a `static var` here: one here kept a game's whole run alive at exit (see that file).
 const _RAW := preload("dot_audio_raw_streams.gd")
 
+## How long a path that resolved to nothing is taken at its word before the disk is asked again.
+const ABSENT_RECHECK_MS := 2000
+
+## What each path resolved to, so a play is a lookup and not a read of the import marker:
+## resolving from disk every time was a millisecond a shot. Per sink, never static, so the
+## streams go when the manager does and nothing is still in use at exit.
+var _resolved: Dictionary = {}
+
+## When a path last resolved to nothing. Asked again after [constant ABSENT_RECHECK_MS], so a
+## file that arrives mid-session (a pack still downloading) still wins over the bank.
+var _absent_ms: Dictionary = {}
+
+## The longest compressed stream that is decoded to PCM after its first play, in seconds.
+## Zero turns the decoding off. See [method _pcm_for].
+var pcm_max_seconds: float = 4.0
+
+## What the decoded copies may hold together. Past it a stream keeps playing compressed.
+var pcm_budget_bytes: int = 64 * 1024 * 1024
+
+const _PCM := preload("dot_audio_pcm.gd")
+
+## Decodes running at once: the worker pool is shared with whatever else the game threads.
+const PCM_JOBS := 2
+
+var _pcm: Dictionary = {}
+var _pcm_copies: Dictionary = {}
+var _pcm_jobs: Dictionary = {}
+var _pcm_skipped: Dictionary = {}
+var _pcm_bytes := 0
+
 
 func _init(p_host: Node = null, p_capacity: int = 32) -> void:
 	host = p_host
@@ -74,6 +104,10 @@ func play(request: Dictionary) -> int:
 
 	player.stream = stream
 	_configure(player, kind, request)
+	# A decoded copy is stored with headroom and made up here. See the decoder.
+	var trim_db := _PCM.HEADROOM_DB if stream is AudioStreamWAV and _pcm_copies.has(stream) else 0.0
+	if trim_db != 0.0:
+		player.set(&"volume_db", float(request.get("volume_db", 0.0)) + trim_db)
 
 	var handle := _next
 	_next += 1
@@ -82,6 +116,7 @@ func play(request: Dictionary) -> int:
 		"priority": int(request.get("priority", 50)),
 		"id": str(request.get("id", "")),
 		"looping": looping,
+		"trim_db": trim_db,
 	}
 	player.set_meta(&"dot_audio_handle", handle)
 	player.play()
@@ -94,7 +129,18 @@ func _stream_for(request: Dictionary) -> AudioStream:
 	var id := StringName(request.get("id", ""))
 	var stream: AudioStream = null
 	if not path.is_empty():
-		stream = stream_at(path)
+		stream = _resolved.get(path) as AudioStream
+		if stream == null:
+			var now := Time.get_ticks_msec()
+			if not _absent_ms.has(path) or now - int(_absent_ms[path]) >= ABSENT_RECHECK_MS:
+				stream = stream_at(path)
+				if stream != null:
+					_resolved[path] = stream
+					_absent_ms.erase(path)
+				else:
+					_absent_ms[path] = now
+		if stream != null and not bool(request.get("looping", false)):
+			stream = _pcm_for(path, stream)
 	# Only once the filesystem has had its turn. See `bank`.
 	if stream == null and not bank.is_empty():
 		if bank.has(path):
@@ -123,6 +169,70 @@ func _configure(player: Node, kind: int, request: Dictionary) -> void:
 			# The family's 2D world is the XZ plane, so one request shape serves both.
 			p2.global_position = Vector2(pos.x, pos.z)
 			p2.max_distance = float(request.get("max_distance", 2000.0))
+
+
+## The PCM copy of a short compressed stream once it is decoded, else [param stream] itself.
+##
+## [b]The first play is the compressed one[/b] and starts the decode on a worker thread; a
+## later play of the same path picks the copy up. Never for a looping request (the resampled
+## copy's ends are not sample-exact, and a seam clicks), never without threads (the decode
+## would run inline, and it is slower than the start it saves).
+func _pcm_for(path: String, stream: AudioStream) -> AudioStream:
+	if _pcm.has(path):
+		return _pcm[path] as AudioStream
+	if _pcm_skipped.has(path):
+		return stream
+	if _pcm_jobs.has(path):
+		_collect_pcm(false)
+		return _pcm.get(path, stream) as AudioStream
+	if not (stream is AudioStreamOggVorbis or stream is AudioStreamMP3):
+		_pcm_skipped[path] = true
+		return stream
+	var rate := int(AudioServer.get_mix_rate())
+	var seconds := stream.get_length()
+	# Booked as stereo until the decode says otherwise.
+	var cost := int(seconds * float(rate)) * 4
+	if seconds <= 0.0 or seconds > pcm_max_seconds or _pcm_bytes + cost > pcm_budget_bytes or not _threaded():
+		_pcm_skipped[path] = true
+		return stream
+	if _pcm_jobs.size() >= PCM_JOBS:
+		_collect_pcm(false)
+		if _pcm_jobs.size() >= PCM_JOBS:
+			return stream
+	var out: Array = []
+	var task := WorkerThreadPool.add_task(_PCM.decode.bind(stream, rate, out), false, "dot-audio pcm")
+	_pcm_jobs[path] = [task, out, cost]
+	_pcm_bytes += cost
+	return stream
+
+
+## Takes in every finished decode; with [param wait], blocks for the ones still running.
+func _collect_pcm(wait: bool) -> void:
+	for path: String in _pcm_jobs.keys():
+		var job: Array = _pcm_jobs[path]
+		var task := int(job[0])
+		if not wait and not WorkerThreadPool.is_task_completed(task):
+			continue
+		var _err := WorkerThreadPool.wait_for_task_completion(task)
+		_pcm_jobs.erase(path)
+		_pcm_bytes -= int(job[2])
+		var out: Array = job[1]
+		if out.is_empty():
+			_pcm_skipped[path] = true
+			continue
+		var wav := out[0] as AudioStreamWAV
+		_pcm_bytes += wav.data.size()
+		_pcm[path] = wav
+		_pcm_copies[wav] = true
+
+
+func _threaded() -> bool:
+	return OS.get_processor_count() > 1 and (not OS.has_feature("web") or OS.has_feature("threads"))
+
+
+## Waits for the decodes still running, so the worker pool shuts down with none of them left.
+func close() -> void:
+	_collect_pcm(true)
 
 
 ## The stream at [param path]: the imported resource when the build has it, else the file's
@@ -276,7 +386,11 @@ func _make(kind: int) -> Node:
 	var player: Node
 	match kind:
 		DotAudioDef.Kind.POSITIONAL_3D:
-			player = AudioStreamPlayer3D.new()
+			var p3 := AudioStreamPlayer3D.new()
+			# No area lookup: the default mask asks the physics space which Area3D each voice
+			# is in on every physics tick it plays, and nothing in the family routes audio by area.
+			p3.area_mask = 0
+			player = p3
 		DotAudioDef.Kind.POSITIONAL_2D:
 			player = AudioStreamPlayer2D.new()
 		_:
@@ -350,8 +464,9 @@ func move(handle: int, position: Vector3) -> void:
 func shape(handle: int, volume_db: float, pitch: float) -> void:
 	if not _busy.has(handle):
 		return
-	var player: Node = (_busy[handle] as Dictionary)["player"]
-	player.set(&"volume_db", volume_db)
+	var entry: Dictionary = _busy[handle]
+	var player: Node = entry["player"]
+	player.set(&"volume_db", volume_db + float(entry.get("trim_db", 0.0)))
 	# The same range the manager clamps a request to: past about four times, resampling is
 	# an artefact rather than a pitch, and zero or below is an engine error.
 	player.set(&"pitch_scale", clampf(pitch, 0.05, 4.0))
@@ -361,9 +476,10 @@ func shape(handle: int, volume_db: float, pitch: float) -> void:
 func voice(handle: int) -> Dictionary:
 	if not _busy.has(handle):
 		return {}
-	var player: Node = (_busy[handle] as Dictionary)["player"]
+	var entry: Dictionary = _busy[handle]
+	var player: Node = entry["player"]
 	return {
-		"volume_db": float(player.get(&"volume_db")),
+		"volume_db": float(player.get(&"volume_db")) - float(entry.get("trim_db", 0.0)),
 		"pitch": float(player.get(&"pitch_scale")),
 		"playing": bool(player.call(&"is_playing")),
 	}

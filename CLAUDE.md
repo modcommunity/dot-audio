@@ -33,7 +33,7 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `runtime/dot_ambience_director.gd`, `core/dot_ambience_rules.gd` | `DotAmbienceDirector`: map to mood, roof, settings and the server's rules, over `stock/moods/` (the shared eight-mood set) |
 | `core/dot_audio_weapon_stock.gd` | `DotAudioWeaponStock`: the 77 stock weapon sounds as `weapon_<name>` defs; `COUNTS` must match `stock/weapons/` |
 | `core/dot_shot_def.gd`, `core/dot_shot_rules.gd`, `core/dot_audio_shot_stock.gd`, `runtime/dot_shot_player.gd`, `runtime/dot_audio_enclosure.gd` | layered shots: `DotShotDef` (layers as a Resource), `DotShotPlayer` (plan/fire, no repeat, distance crossfade and delay), `DotAudioEnclosure` (rays to room size and openness, tail class, `ShotReverb` bus), `DotShotRules` (`snd_shot_*`), the stock set from `tools/make_shot_layers.py`; `DotAudioShotStock.COUNTS` must match `stock/shots/` |
-| `stock/` | CC0 footsteps (Kenney) and generated beds; `CREDITS.md` |
+| `stock/` | CC0 footsteps, interface cues, announcer and body hits (Kenney) and generated beds; `CREDITS.md` |
 | `web/dot_audio_ceiling.js` | the browser's limiter, loaded by a page before the engine |
 | `tools/loudness.sh`, `tools/dot_audio_capture.gd` | record a game under xvfb and measure it; run from a game's root; a game's `tools/loudness_pilot.gd` drives its player |
 | `tools/ambience_levels.gd` | headless table of the Ambience bus at a game's defaults (stock beds and moods through the gain chain, ffmpeg file levels, one-shots per minute); run from a game's root with `--script`; exit 1 over -30 dBFS RMS or 3 one-shots a minute |

@@ -114,3 +114,18 @@ The 37 reload and handling cues (`cue_mag_out`, `cue_bolt_back`, `cue_cyl_open`,
 Self-synthesised by `tools/make_voice_stock.py` (numpy/scipy through `tools/foley.py`: noise bursts, falling-sine thuds,
 modal strikes, a formant-filtered falling pitch for hurt/die). No recordings, no third-party material: CC0 as the rest of this
 pack. Levelled by K-weighted active loudness, ceiling -2 dBFS. Used when `DotAudioSynth.bank(..., stock = true)`.
+
+## interface/, announcer/, body/ (2026-11-10)
+
+Kenney packs, CC0 1.0 ([licence](http://creativecommons.org/publicdomain/zero/1.0/)), from the Kenney Game Assets All-in-1 3.7.0 bundle. Renamed; files that were stereo were converted to mono Ogg Vorbis (q6), otherwise unchanged. Interface cues, a spoken announcer and body hits for a game's hit marker, medals, flag and vote cues, spawn, hurt and death; which file plays for what is each game's decision.
+
+| File | Pack | Original |
+| --- | --- | --- |
+| `interface/tick_0..2.ogg` | [Interface Sounds](https://kenney.nl/assets/interface-sounds) | `tick_001`, `tick_002`, `tick_004` |
+| `interface/confirm_0..1.ogg` | Interface Sounds | `confirmation_001`, `confirmation_003` |
+| `interface/confirm_long.ogg`, `confirm_bright.ogg` | Interface Sounds | `confirmation_002`, `confirmation_004` |
+| `interface/question.ogg`, `bong.ogg`, `pluck.ogg`, `drop.ogg` | Interface Sounds | `question_001`, `bong_001`, `pluck_001`, `drop_002` |
+| `interface/phase_jump_0..2.ogg` | [Digital Audio](https://kenney.nl/assets/digital-audio) | `phaseJump1..3` |
+| `body/punch_0..4.ogg` | [Impact Sounds](https://kenney.nl/assets/impact-sounds) | `impactPunch_medium_000..004` |
+| `body/punch_heavy_0..4.ogg` | Impact Sounds | `impactPunch_heavy_000..004` |
+| `announcer/<name>.ogg` | Synth Voice 2 (1.0, [kenney.nl](https://www.kenney.nl)) | the same phrase in camelCase: `target_eliminated` is `targetEliminated`, likewise `perfect`, `combo`, `multikill`, `godlike`, `eliminated`, `combo_breaker`, `target_destroyed`, `fantastic`, `sniper`, `untouchable`, `lets_go`, `go_go_go`, `enemy_captured`, `target_lost`, `point_captured` |

@@ -9,7 +9,17 @@ var rules: DotAudioSurfRules = DotAudioSurfRules.new()
 
 ## Follows exactly these bodies, each surfing by [method DotAudioSurfRules.is_surfing].
 func keep_surfers(bodies: Array) -> void:
-	keep(bodies, func(b: Node3D) -> bool: return rules.enabled and rules.is_surfing(b))
+	keep(bodies, _is_surfer)
+
+
+func _is_surfer(b: Node3D) -> bool:
+	return rules.enabled and rules.is_surfing(b)
+
+
+## A body not yet gliding and slower than the quiet speed would play nothing (volume 0), so its ray is saved; it is asked
+## again the tick it passes that speed, and a gliding body is asked every tick.
+func _worth_asking(playing: bool, speed: float) -> bool:
+	return playing or speed >= rules.quiet_speed
 
 
 func _sound_for(_surface: StringName) -> StringName:

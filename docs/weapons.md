@@ -14,7 +14,7 @@ The stock weapon sounds in `addons/dot_audio/stock/weapons/` (77 sounds, 262 fil
 | zee-dot-weapons | 27 | one synthesised stream per class (`ZeeWeaponSound`), pitch jitter only | none, but no dry, no equip, no casing, no shell reload | one reload_out and one reload_in for every gun; one impact for every surface; 9 melee and throws on 3 swing/bash/throw streams |
 | zed-dot-weapons | 16 | zee's synth by class; uzi and tactical SMG on the pistol class, flamethrower on the minigun's, 3 throwables on the default | none | silenced pistol is the same stream as the service pistol |
 
-Games that use a pack (arena, playground, zombie-zone and the mg- games through `ZeeShotFx` or `ZzViewModel`) have exactly their pack's sounds. dot-weapon itself plays nothing and says so (`used` signals only).
+Games that use a pack (arena, playlot, zombie-zone and the mg- games through `ZeeShotFx` or `ZzViewModel`) have exactly their pack's sounds. dot-weapon itself plays nothing and says so (`used` signals only).
 
 Ranked by how many weapons share a class (the order fixed): rifle 9, melee swing 17 (zee 7, zz-modern 3, medieval 7), shotgun 7, SMG 7, heavy/battle rifle 6, pistol 5, sniper 5, launcher 5, thrown 5, magnum 4, minigun/flamethrower 2, beam 1, charge 1, bow and crossbow 2.
 

@@ -9,14 +9,14 @@ const PREFIX := "weapon_"
 
 ## name -> number of variant files. A suite compares this with the disk.
 const COUNTS := {
-	&"arrow_pass": 2, &"autoshot_fire": 2, &"bash": 5, &"battle_fire": 5, &"beam_fire": 5, &"bow_draw": 2,
-	&"bow_fire": 5, &"carbine_fire": 3, &"casing": 5, &"charge_fire": 4, &"crossbow_fire": 5,
-	&"crossbow_load": 5, &"derringer_fire": 3, &"draw_blade": 4, &"dry": 5, &"dry_energy": 2, &"dry_heavy": 3,
+	&"arrow_pass": 2, &"autoshot_far": 2, &"autoshot_fire": 2, &"bash": 5, &"battle_far": 2, &"battle_fire": 5, &"beam_fire": 5, &"bow_draw": 2,
+	&"bow_fire": 5, &"carbine_far": 2, &"carbine_fire": 3, &"casing": 5, &"charge_fire": 4, &"crossbow_fire": 5,
+	&"crossbow_load": 5, &"derringer_far": 2, &"derringer_fire": 3, &"draw_blade": 4, &"dry": 5, &"dry_energy": 2, &"dry_heavy": 3,
 	&"dry_light": 3, &"equip": 3, &"equip_energy": 2, &"equip_heavy": 2, &"equip_light": 2, &"explosion": 5,
 	&"grenade_fire": 5, &"heavy_far": 2, &"heavy_fire": 5, &"impact": 5, &"impact_flesh": 5, &"impact_metal": 5,
-	&"impact_wood": 5, &"launcher_fire": 5, &"light_far": 1, &"light_fire": 5, &"lmg_fire": 5, &"magnum_far": 2,
-	&"magnum_fire": 4, &"marksman_fire": 4, &"melee_flesh": 5, &"melee_metal": 5, &"minigun_fire": 5,
-	&"mpistol_fire": 3, &"pin_pull": 3, &"rack": 2, &"rail_fire": 4, &"reload_in": 4, &"reload_in_energy": 2,
+	&"impact_wood": 5, &"launcher_fire": 5, &"light_far": 1, &"light_fire": 5, &"lmg_far": 2, &"lmg_fire": 5, &"magnum_far": 2,
+	&"magnum_fire": 4, &"marksman_far": 2, &"marksman_fire": 4, &"melee_flesh": 5, &"melee_metal": 5, &"minigun_fire": 5,
+	&"mpistol_far": 2, &"mpistol_fire": 3, &"pin_pull": 3, &"rack": 2, &"rail_fire": 4, &"reload_in": 4, &"reload_in_energy": 2,
 	&"reload_in_heavy": 2, &"reload_in_launcher": 2, &"reload_in_light": 2, &"reload_in_lmg": 2,
 	&"reload_in_magnum": 2, &"reload_in_rifle": 2, &"reload_in_smg": 2, &"reload_in_sniper": 4,
 	&"reload_out": 4, &"reload_out_energy": 2, &"reload_out_heavy": 2, &"reload_out_launcher": 2,

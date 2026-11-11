@@ -28,10 +28,11 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first; this file is only what is sp
 | `core/dot_audio_stock.gd` | `DotAudioStock`: the stock footsteps and beds as defs, `add_to`, surface names and aliases |
 | `core/dot_audio_loudness.gd` | `DotAudioLoudness`: the standard's numbers, `install_limiter` |
 | `runtime/dot_audio_footsteps.gd` | `DotAudioFootsteps`: steps by distance and surface for any number of bodies; `stepped` |
+| `runtime/dot_voice_queue.gd` | `DotVoiceQueue`: one announcer/medal line at a time; `say(id, priority)` plays, queues (priority then order, deduped, capped, stale dropped) or cuts in past `interrupt_margin`; `tick(dt)` for suites |
 | `runtime/dot_audio_ambience.gd` | `DotAudioAmbience`: a bed per map, zones by box, equal-power crossfades |
 | `runtime/dot_ambience.gd` | `DotAmbience`: moods (looping beds plus sparse random one-shots), crossfade on a change, `pause`/`duck`/`hush` holders, `describe()`; `runtime/dot_ambience_roof.gd` (`DotAmbienceRoof`: upward ray with hysteresis; the game feeds `set_indoors`), `core/dot_ambience_{config,set,mood,moods}.gd` are its settings, sound-set reader and map-to-mood table |
 | `runtime/dot_ambience_director.gd`, `core/dot_ambience_rules.gd` | `DotAmbienceDirector`: map to mood, roof, settings and the server's rules, over `stock/moods/` (the shared eight-mood set) |
-| `core/dot_audio_weapon_stock.gd` | `DotAudioWeaponStock`: the 77 stock weapon sounds as `weapon_<name>` defs; `COUNTS` must match `stock/weapons/` |
+| `core/dot_audio_weapon_stock.gd` | `DotAudioWeaponStock`: the 84 stock weapon sounds as `weapon_<name>` defs; `COUNTS` must match `stock/weapons/` |
 | `core/dot_shot_def.gd`, `core/dot_shot_rules.gd`, `core/dot_audio_shot_stock.gd`, `runtime/dot_shot_player.gd`, `runtime/dot_audio_enclosure.gd` | layered shots: `DotShotDef` (layers as a Resource), `DotShotPlayer` (plan/fire, no repeat, distance crossfade and delay), `DotAudioEnclosure` (rays to room size and openness, tail class, `ShotReverb` bus), `DotShotRules` (`snd_shot_*`), the stock set from `tools/make_shot_layers.py`; `DotAudioShotStock.COUNTS` must match `stock/shots/` |
 | `stock/` | CC0 footsteps, interface cues, announcer and body hits (Kenney) and generated beds; `CREDITS.md` |
 | `web/dot_audio_ceiling.js` | the browser's limiter, loaded by a page before the engine |

@@ -26,5 +26,6 @@ extends RefCounted
 # 14: DotHurtSound (the damage-scaled hurt grunt that yields to a lethal hit's death cry).
 # 15: DotAudioSink.close(); DotAudioSinkGodot.pcm_max_seconds and pcm_budget_bytes; DotAudioFootsteps.hear_distance (a short compressed
 #     stream is decoded to PCM off the game thread after its first play, so starting it again is cheap).
-const LEVEL := 15
+# 16: DotVoiceQueue (one announcer or medal line at a time, by priority).
+const LEVEL := 16
 const OLDEST := 1

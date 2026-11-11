@@ -307,6 +307,40 @@ func _test_slide() -> void:
 	_check(slide.describe()["bodies"] == 0, "keep drops a body freed since the last frame")
 	_check_freed_slide(m, slide)
 	_check_surf_asks(m)
+	_check_reach(m)
+
+
+## A body out of earshot of the listener is not asked whether it slides, and its loop stops.
+func _check_reach(m: DotAudioManager) -> void:
+	var slide := DotAudioSlide.new()
+	slide.manager = m
+	add_child(slide)
+	slide.set_physics_process(false)
+	var body := Node3D.new()
+	add_child(body)
+	var asked := [0]
+	var ask := func() -> bool:
+		asked[0] += 1
+		return true
+	slide.track(body, ask, {"surface": &"metal"})
+	m.listener_position = Vector3.ZERO
+	var reach := sqrt(slide.reach_squared())
+	_check(is_equal_approx(reach, 30.0 + slide.reach_margin), "reach is the loop's max_distance plus the margin " + str(reach))
+	for i in 5:
+		body.global_position = Vector3(5.0 + i * 0.15, 0, 0)
+		slide._physics_process(1.0 / 60.0)
+	var h := int(slide._bodies[body]["handle"])
+	_check(asked[0] == 5 and slide.is_sliding(body) and m.is_playing(h), "a body in earshot is asked and plays")
+	for i in 5:
+		body.global_position = Vector3(80.0 + i * 0.15, 0, 0)
+		slide._physics_process(1.0 / 60.0)
+	_check(asked[0] == 5 and not slide.is_sliding(body) and not m.is_playing(h), "out of earshot it is not asked and its loop stops")
+	slide.reach = 0.0
+	slide._physics_process(1.0 / 60.0)
+	_check(asked[0] == 6, "reach 0 asks every body wherever it is")
+	slide.untrack(body)
+	slide.queue_free()
+	body.queue_free()
 
 
 ## A surf node asks "surfing?" only of a body that is gliding or fast enough to be heard.

@@ -22,6 +22,13 @@ func _worth_asking(playing: bool, speed: float) -> bool:
 	return playing or speed >= rules.quiet_speed
 
 
+var _glide_ids: Array[StringName] = [DotAudioStock.SURF_GLIDE_ID]
+
+
+func _sound_ids() -> Array[StringName]:
+	return _glide_ids
+
+
 func _sound_for(_surface: StringName) -> StringName:
 	return DotAudioStock.SURF_GLIDE_ID
 

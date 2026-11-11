@@ -246,6 +246,16 @@ SPECS = {
     "mpistol_fire": (-5.0, chain(clips(SHOTS + "/cg1.wav", [0.07], 0.25, 2), clips(SHOTS + "/cg1.wav", [0.07], 0.25, 4),
                                  clips(SHOTS + "/cg1.wav", [0.07], 0.25, 0))),
     "autoshot_fire": (-1.5, layered(clips(SHOTS + "/shotgun.wav", [0.05, 0.25, 0.76], 0.9, -3), (95, 36, 0.09, 0.45))),
+    # the distant report of the per-gun classes: mid-distance (mid mic) takes of the same CC0 guns, pitched to suit.
+    # grenade and rail have no far set: no CC0 mid-distance source is a close match (a cannon or an energy bolt)
+    "lmg_far": (-6.0, chain(firearm("AK-47", "C_31P.wav", 1.2, semis=-3), firearm("SKS", "U_19P.wav", 1.2, semis=-4))),
+    "battle_far": (-6.0, chain(firearm("SKS", "U_19P.wav", 1.4), firearm("Marlin 336", "I_17P.wav", 1.3, semis=-2))),
+    "marksman_far": (-5.5, chain(firearm("Savage 10 .300 Blackout", "T_17P.wav", 1.5, semis=-1),
+                                 firearm("Arisaka", "E_18P.wav", 1.6, semis=-1))),
+    "carbine_far": (-7.0, chain(firearm("Marlin 336", "I_17P.wav", 1.0, semis=2), firearm("Model 1894", "L_17P.wav", 1.0, semis=2))),
+    "derringer_far": (-8.0, chain(firearm("Bersa", "F_41P.wav", 0.8, semis=3), firearm("Ruger Single Six", "S_11P.wav", 0.7, semis=2))),
+    "mpistol_far": (-9.0, chain(firearm("Carl Gustav M45", "G_20P.wav", 0.4, semis=2), firearm("PPSh", "P_16P.wav", 0.4, semis=3))),
+    "autoshot_far": (-5.0, chain(firearm("Nova", "O_17P.wav", 1.2, semis=-2), firearm("Mossberg", "N_26P.wav", 1.2, semis=-2))),
     "grenade_fire": (-3.0, layered(oga(BANG + "/cannon_0[1-5].ogg", length=0.7, semis=9), (110, 45, 0.07, 0.35))),
     "rail_fire": (-2.0, layered(chain(oga("doomsday/short.wav", length=1.3, semis=-2),
                                       oga(JC + "Energy Shot Charged_v1_0[12].wav", JC + "Energy Shot Charged_v2_02.wav",

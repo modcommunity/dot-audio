@@ -12,8 +12,8 @@ extends "selftest/selftest_shots.gd"
 ## godot --headless --path . res://examples/audio_selftest.tscn
 ## [/codeblock]
 
-const SECTIONS := 23
-const CHECKS := 328
+const SECTIONS := 24
+const CHECKS := 340
 
 func _ready() -> void:
 	DotLog.set_level(DotLog.Level.ERROR)
@@ -48,6 +48,7 @@ func _run() -> void:
 	_test_raw_fallback()
 	_test_cheap_starts()
 	_test_hurt_sound()
+	_test_voice_queue()
 	_test_nothing_kept_alive_at_exit()
 
 	_line("")
@@ -671,6 +672,54 @@ func _test_hurt_sound() -> void:
 	_check(DotHurtSound.play(m, &"rifle", 20.0) != 0, "a non-lethal hit plays")
 	_check(DotHurtSound.play(m, &"rifle", 20.0, true) == 0, "a lethal hit leaves the grunt to the death cry")
 	_check(DotHurtSound.play(null, &"rifle", 20.0) == 0, "no audio is silence, not an error")
+
+func _test_voice_queue() -> void:
+	_section("Announcer lines take turns by priority and never talk over each other")
+	var cat := DotAudioCatalogue.new()
+	for n in [&"a", &"b", &"c", &"d", &"e", &"f"]:
+		var def := DotAudioDef.new()
+		def.id = n
+		def.path = "res://fixtures/silent.wav"
+		cat.add(def)
+	var m := _manager(cat)
+	var sink := m.sink as DotAudioSinkNull
+	var q := DotVoiceQueue.new()
+	q.setup(m)
+	q.gap = 0.1
+	q.max_wait = 3.0
+	add_child(q)
+	_check(q.say(&"a", 40) == DotVoiceQueue.PLAYING and q.is_speaking(), "a line starts at once when nobody speaks")
+	_check(q.say(&"b", 40) == DotVoiceQueue.QUEUED and sink.count_of(&"b") == 0, "a second line waits instead of overlapping")
+	_check(q.say(&"b", 40) == DotVoiceQueue.DUPLICATE and q.queued_ids().size() == 1, "the same line is not queued twice")
+	q.say(&"c", 55)
+	_check(q.queued_ids() == [&"c", &"b"], "the more urgent line waits first, ties in the order said")
+	for h in range(1, 20):
+		sink.finish(h)
+	m._process(0.0)
+	q.tick(0.05)
+	_check(not q.is_speaking() and sink.count_of(&"c") == 0, "a short silence separates two lines")
+	q.tick(0.1)
+	_check(q.is_speaking() and sink.count_of(&"c") == 1 and sink.count_of(&"b") == 0, "then the most urgent one speaks")
+	_check(q.say(&"d", 90) == DotVoiceQueue.INTERRUPTED and sink.count_of(&"d") == 1, "a line far more urgent cuts in")
+	_check(q.say(&"e", 95) == DotVoiceQueue.QUEUED, "but only when it outranks by the margin")
+	q.clear()
+	for n in [&"a", &"b", &"c", &"d", &"e"]:
+		q.say(n, 10)
+	_check(q.queued_ids().size() <= q.max_queued, "the queue is capped")
+	_check(q.say(&"f", 5) == DotVoiceQueue.DROPPED, "a line less urgent than a full queue is dropped")
+	q.clear()
+	q.say(&"b", 10)
+	q.tick(4.0)
+	for h in range(1, 40):
+		sink.finish(h)
+	m._process(0.0)
+	q.tick(0.2)
+	q.tick(0.2)
+	_check(q.queued_ids().is_empty() and not q.is_speaking(), "a line that waited too long is dropped as stale")
+	var silent := DotVoiceQueue.new()
+	_check(silent.say(&"a") == DotVoiceQueue.DROPPED, "no audio is silence, not an error")
+	silent.free()
+	q.queue_free()
 
 func _test_shaping() -> void:
 	_section("A playing voice is shaped, not restarted")

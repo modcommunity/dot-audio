@@ -81,3 +81,7 @@ It does not break "ships no audio": that rule is about what a `DotAudioDef` may 
 - **Per-voice fades.** The shipped fade goes through the bus, which is what almost every game wants and costs nothing per voice. A game that eases a voice itself calls `shape()` each frame; `_ramp` is the subclass point for sample-accurate stem control.
 - **A music stem player.** Layered stems in phase need one stream and a mix, which is a different class. `play_music` crossfades whole tracks.
 - **Voice chat.** dot-voice: capture, codecs, jitter buffers and routing are a different problem.
+
+## Voice queue (API level 16)
+
+`DotVoiceQueue` keeps simultaneous announcer and medal lines from talking over each other. Idle: a line plays at once. Busy: a line that outranks the speaker by `interrupt_margin` (20) cuts it off; otherwise it waits, highest priority first and then first in. A queued id is not queued twice (it keeps the higher priority), the queue holds `max_queued` (4) and drops the lowest, a line older than `max_wait` (3 s) is dropped, and `gap` (0.12 s) separates lines. The end of a line is read from `DotAudioManager.is_playing`, which the manager's `_process` keeps current, so a suite using a null sink must call `manager._process(0.0)` after `sink.finish`. Nobody has listened to the priorities on a real build.

@@ -24,6 +24,13 @@ var volume: float = 1.0
 @export_range(0.05, 5.0, 0.05) var ground_probe: float = 0.6
 @export_flags_3d_physics var ground_mask: int = 0xFFFFFFFF
 var surface_metas: Array[StringName] = [&"surface", &"dot_fps_surface"]
+## Farther than this (m) from the manager's listener a body is not asked whether it slides: its loop is
+## stopped and only its position is kept, so a 32-player client pays the question and the ground ray for
+## the few bodies in earshot. Negative: the loop's own max_distance (the sink plays nothing past it)
+## plus [member reach_margin]; 0: every body is asked wherever it is.
+var reach: float = -1.0
+## How far past the loop's max_distance a body is still asked (the listener moves between frames).
+var reach_margin: float = 4.0
 
 # body -> {last, handle, surface, sliding: Callable, opts}
 var _bodies: Dictionary = {}
@@ -78,14 +85,51 @@ func _physics_process(delta: float) -> void:
 		return
 	if manager == null:
 		manager = DotRegistry.get_node_service(DotAudioManager.SERVICE) as DotAudioManager
+	var reach_sq := reach_squared()
+	var ear := manager.listener_position if manager != null else Vector3.ZERO
 	for body: Variant in _bodies.keys():
 		if not is_instance_valid(body):
 			_drop_freed(body)
 			continue
-		if not (body as Node3D).is_inside_tree():
+		var b := body as Node3D
+		if not b.is_inside_tree():
 			_bodies.erase(body)
 			continue
-		advance(body, delta)
+		if reach_sq > 0.0 and b.global_position.distance_squared_to(ear) > reach_sq:
+			out_of_reach(b)
+		else:
+			advance(b, delta)
+
+
+## [member reach] squared as this frame uses it; 0 when every body is asked (no manager, no catalogue,
+## a loop with no max_distance, or [member reach] 0).
+func reach_squared() -> float:
+	if reach > 0.0:
+		return reach * reach
+	if reach == 0.0 or manager == null or manager.catalogue == null:
+		return 0.0
+	var far := 0.0
+	for id: StringName in _sound_ids():
+		var def := manager.catalogue.find(id)
+		if def == null:
+			continue
+		if def.max_distance <= 0.0:
+			return 0.0
+		far = maxf(far, def.max_distance)
+	if far <= 0.0:
+		return 0.0
+	return (far + reach_margin) * (far + reach_margin)
+
+
+## A body out of earshot this frame: its loop stops, its position is kept so its speed is right when it
+## comes back. Public so a suite can step it with no physics running.
+func out_of_reach(body: Node3D) -> void:
+	var st: Dictionary = _bodies.get(body, {})
+	if st.is_empty():
+		return
+	st["last"] = body.global_position
+	if bool(st.get("on", false)):
+		_stop(body)
 
 
 ## One body, one physics frame. Public so a suite can step it with no physics running.
@@ -137,6 +181,18 @@ func advance(body: Node3D, delta: float) -> void:
 ## when the answer cannot be heard (a body not yet playing, too slow to be audible).
 func _worth_asking(_playing: bool, _speed: float) -> bool:
 	return true
+
+
+var _slide_ids: Array[StringName] = []
+
+
+## Every loop [method _sound_for] can return, for [method reach_squared]; a subclass that swaps one swaps both.
+func _sound_ids() -> Array[StringName]:
+	if _slide_ids.is_empty():
+		_slide_ids.append(DotAudioStock.slide_id(&""))
+		for s: StringName in DotAudioStock.SURFACES:
+			_slide_ids.append(DotAudioStock.slide_id(s))
+	return _slide_ids
 
 
 ## The loop to play on [param surface]; a subclass swaps it.

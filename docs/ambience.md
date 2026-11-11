@@ -53,7 +53,7 @@ A game sets `ambience.indoor_mood` (the mood to use under a roof) and calls `set
 
 ## The director (`DotAmbienceDirector`): what every game repeats
 
-A game adopts the layer in a few lines: the stock set (`stock/moods/`, eight moods, CC0, `moods/CREDITS.md`) loads by itself, and the director does the map to mood choice (document `"ambient"`, then `map_moods`, then `prefix_moods`, then the name vote, then `default_mood`), the `extra` merge, the roof, and the multiplication of the server's `DotAmbienceRules` (cvars `<prefix>_ambient*`, `bind_cvars`/`follow_cvars`) with the player's `ambient`, `ambient_volume` and `ambient_frequency` settings. The layer plays on the `Ambience` bus, so the master and ambience sliders and a mute reach it. See the class comment for the call sequence; game-arena and game-zombie-zone are the two users.
+A game adopts the layer in a few lines: the stock set (`stock/moods/`, eight moods, CC0, `moods/CREDITS.md`) loads by itself, and the director does the map to mood choice (document `"ambient"`, then `map_moods`, then `prefix_moods`, then the name vote, then `default_mood`), the `extra` merge, the roof, and the multiplication of the server's `DotAmbienceRules` (cvars `<prefix>_ambient*`, `bind_cvars`/`follow_cvars`) with the player's `ambient`, `ambient_volume` and `ambient_frequency` settings. The layer plays on the `Ambience` bus, so the master and ambience sliders and a mute reach it. See the class comment for the call sequence; game-fatal-contact and game-zombie-zone are the two users.
 
 ## Birds and a louder bed belong to the map
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Synthesises the reload/handling cues the arena reload sequence plays at its phase boundaries
-(arena-weapons view/aw_reload_cues.gd maps phase names to these). Self-synthesised from tools/foley.py: no recordings.
+(fc-weapons view/aw_reload_cues.gd maps phase names to these). Self-synthesised from tools/foley.py: no recordings.
 
     python3 -I tools/make_reload_cues.py [--out addons/dot_audio/stock/weapons] [--previews DIR]
 

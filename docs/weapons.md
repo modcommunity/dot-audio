@@ -4,13 +4,13 @@ The stock weapon sounds in `addons/dot_audio/stock/weapons/` (84 sounds, 387 fil
 
 ## Audit (2026-10-27, before this change)
 
-83 weapons: zee-dot-weapons 27, zed-dot-weapons 16, zz-modern-weapons 28, zz-medieval-weapons 10, game-g2gfast's own deagle and knife 2.
+83 weapons: zee-dot-weapons 27, zed-dot-weapons 16, zz-modern-weapons 28, zz-medieval-weapons 10, game-airdrift's own deagle and knife 2.
 
 | Pack | Weapons | What played | Silent | Shared |
 | --- | --- | --- | --- | --- |
 | zz-modern-weapons | 28 | nothing: `ZzWeaponSound.TABLE` empty, fire/reload/draw/dry all null | 28 of 28, every kind | n/a |
 | zz-medieval-weapons | 10 | nothing: `ZzWeaponAnim.cue` names, no player | 10 of 10 | n/a |
-| game-g2gfast own weapons | 2 | nothing (its `audio/` has landing and jump only) | 2 of 2 | n/a |
+| game-airdrift own weapons | 2 | nothing (its `audio/` has landing and jump only) | 2 of 2 | n/a |
 | zee-dot-weapons | 27 | one synthesised stream per class (`ZeeWeaponSound`), pitch jitter only | none, but no dry, no equip, no casing, no shell reload | one reload_out and one reload_in for every gun; one impact for every surface; 9 melee and throws on 3 swing/bash/throw streams |
 | zed-dot-weapons | 16 | zee's synth by class; uzi and tactical SMG on the pistol class, flamethrower on the minigun's, 3 throwables on the default | none | silenced pistol is the same stream as the service pistol |
 
@@ -52,7 +52,7 @@ Every class below has 2 to 5 real variants, picked at random per shot, with a pi
 
 - `DotAudioStock.add_to(catalogue)` now adds the weapon stock too (`weapons := false` leaves it out), so every game that already takes the footsteps and beds has `weapon_*` ids with no per-game code.
 - `ZeeShotFx` plays dry (throttled), equip, the case landing (0.38 s after the eject), a shell per round for tube magazines, and the `_far` recording past 60 m; the rig wires the arsenal's `dry_used` and the equip change. `ZeeShotFx.heard(stream)` is emitted for every sound handed to a voice.
-- game-g2gfast: `G2GCombat.weapon_used/weapon_dry/weapon_equipped` and `G2GPresentation.on_weapon_*` play the deagle (magnum report, far past 60 m) and the knife (swing).
+- game-airdrift: `G2GCombat.weapon_used/weapon_dry/weapon_equipped` and `G2GPresentation.on_weapon_*` play the deagle (magnum report, far past 60 m) and the knife (swing).
 
 Added 2026-11-03: layered sets for launcher, minigun, beam (cut from the class's `*_fire_N`), charge (Kenney `laserLarge_000-004`, CC0; the stock `charge_fire` needs attribution so it is not used), swing and throw (the stock `swing_N`, `throw_N`; tails 9 and 7 dB lower, near and far unit sizes smaller, `max_distance` 60 m). Measured with ffmpeg on the decoded files: every layer peaks between -0.6 and -26 dBFS (none clipped), attack 0.045 s, body 0.4 s, small tail 0.26 s, medium 0.65 s, large 1.52 s, hall 3.17 s, outdoor 1.5 s, far 0.13 to 0.68 s. `DotShotRules.tail_voices` (cvar `snd_shot_tail_voices`, default 4, 0 for no limit) bounds room tails sounding at once from one player: a tail is dropped when the cap is reached, and tails are spaced by their length over the cap, so a minigun at 25 rounds a second in a hall plays four evenly spaced 3.17 s tails instead of eighty. The crack and body of every round always play. The suite counts concurrent tails over 6 s of minigun fire. Nothing was heard by a person.
 
@@ -103,6 +103,6 @@ Added 2026-11-01: layered shots (`DotShotDef`, `DotShotPlayer`, `DotAudioEnclosu
 
 ## Reload cues and level pass (2026-11-08)
 
-`stock/weapons/cue_<name>_<n>.ogg` are per-event handling sounds (magazine release, rack, cylinder open, bolt lift, cover slap and so on). `DotWeaponSound.pick(&"cue_<name>", roll)` finds them like any other variant, so an addon that knows the animation phase (arena-weapons `AwReloadCues`) can fire each at its phase boundary. Regenerate with `python3 tools/make_reload_cues.py`; audit with `python3 -I tools/audit_weapon_audio.py`.
+`stock/weapons/cue_<name>_<n>.ogg` are per-event handling sounds (magazine release, rack, cylinder open, bolt lift, cover slap and so on). `DotWeaponSound.pick(&"cue_<name>", roll)` finds them like any other variant, so an addon that knows the animation phase (fc-weapons `AwReloadCues`) can fire each at its phase boundary. Regenerate with `python3 tools/make_reload_cues.py`; audit with `python3 -I tools/audit_weapon_audio.py`.
 
 Added 2026-11-10: `_far` recordings (2 variants each) for `lmg`, `battle`, `marksman`, `carbine`, `derringer`, `mpistol` and `autoshot`, cut by `tools/make_weapon_stock.py` from the mid-distance takes of The Free Firearm Sound Library (CC0): lmg AK-47 and SKS down 3-4 st; battle SKS and Marlin 336 (-2 st); marksman Savage 10 and Arisaka (-1 st); carbine Marlin 336 and Model 1894 (+2 st); derringer Bersa and Ruger Single Six (+3, +2 st); mpistol M45 and PPSh (+2, +3 st); autoshot Nova and Mossberg (-2 st). `DotWeaponSound.pick_far` finds them by name (`<class>_fire` to `<class>_far`), so no game code changes. Peaks -5 to -9 dBFS. `grenade` and `rail` have no far recording: the library has only firearms, and a cannon or an energy bolt has no close CC0 mid-distance take, so they stay without (the far path returns null). Nothing was heard by a person.

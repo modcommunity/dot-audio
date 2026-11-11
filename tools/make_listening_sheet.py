@@ -3,7 +3,7 @@
 
     python3 -I tools/make_listening_sheet.py --plans plans.json --out sheet.html
 
-Sections: layered shots per class (outdoor, indoor, hall, distant), reload timelines (cues placed where arena-weapons'
+Sections: layered shots per class (outdoor, indoor, hall, distant), reload timelines (cues placed where fc-weapons'
 AwReloadCues puts them; `plans.json` is the `PLAN` lines of `aw_selftest --plans`, one JSON object per line), the
 handling-cue gallery, dry/equip, impacts and explosions. Needs numpy, scipy, matplotlib and ffmpeg.
 """
@@ -177,9 +177,9 @@ def main():
                 plans.append(json.loads(line[5:]))
     secs = [("shots", "Layered shots", "Per weapon class: transient + body + room tail, as the game layers them, outdoors, indoors (medium room), in a hall, and the distant layer.", shots())]
     if plans:
-        secs.append(("reloads", "Reload timelines", "Each gun's reload with its handling cues placed at the animation phase that makes them (blue lines in the spectrogram). Cue timing is the plan arena-weapons plays from.", reloads(plans)))
+        secs.append(("reloads", "Reload timelines", "Each gun's reload with its handling cues placed at the animation phase that makes them (blue lines in the spectrogram). Cue timing is the plan fc-weapons plays from.", reloads(plans)))
     secs += [("cues", "Handling cues", "The 37 synthesised cues, first variant of three.", gallery()),
-             ("feel", "Dry fire, equip, casings", "", feel()), ("impacts", "Impacts and explosions", "Stock impact, flesh, melee and explosion sounds (the game's own synthesised hit-marker, kill and headshot voices are listed on the game-arena branch).", impacts())]
+             ("feel", "Dry fire, equip, casings", "", feel()), ("impacts", "Impacts and explosions", "Stock impact, flesh, melee and explosion sounds (the game's own synthesised hit-marker, kill and headshot voices are listed on the game-fatal-contact branch).", impacts())]
     Path(a.out).write_text(html(secs, "Self-synthesised or CC0. Every clip is the exact stock file or a mix of stock files; nothing here is licensed."))
     print("wrote", a.out, Path(a.out).stat().st_size // 1024, "KB")
 

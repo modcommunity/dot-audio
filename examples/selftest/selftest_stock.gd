@@ -306,6 +306,36 @@ func _test_slide() -> void:
 	slide.keep([], func(_b: Node3D) -> bool: return false)
 	_check(slide.describe()["bodies"] == 0, "keep drops a body freed since the last frame")
 	_check_freed_slide(m, slide)
+	_check_surf_asks(m)
+
+
+## A surf node asks "surfing?" only of a body that is gliding or fast enough to be heard.
+func _check_surf_asks(m: DotAudioManager) -> void:
+	var surf := DotAudioSurf.new()
+	surf.manager = m
+	add_child(surf)
+	surf.set_physics_process(false)
+	var body := Node3D.new()
+	add_child(body)
+	var asked := [0]
+	surf.track(body, func() -> bool:
+		asked[0] += 1
+		return true)
+	for i in 5:
+		body.global_position += Vector3(1.0 / 60.0, 0, 0)
+		surf.advance(body, 1.0 / 60.0)
+	_check(asked[0] == 0 and not surf.is_sliding(body), "a surf body under the quiet speed is not asked")
+	for i in 5:
+		body.global_position += Vector3(10.0 / 60.0, 0, 0)
+		surf.advance(body, 1.0 / 60.0)
+	_check(asked[0] == 5 and surf.is_sliding(body), "past it, it is asked every tick and glides")
+	for i in 3:
+		body.global_position += Vector3(1.0 / 60.0, 0, 0)
+		surf.advance(body, 1.0 / 60.0)
+	_check(asked[0] == 8 and surf.is_sliding(body), "and a gliding body is asked even when slow")
+	surf.untrack(body)
+	surf.queue_free()
+	body.queue_free()
 
 
 func _check_freed_slide(m: DotAudioManager, slide: DotAudioSlide) -> void:

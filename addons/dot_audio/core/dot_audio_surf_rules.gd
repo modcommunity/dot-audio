@@ -30,6 +30,9 @@ var min_normal_y: float = 0.02
 var mask: int = 0xFFFFFFFF
 
 var _seen: Dictionary = {}
+# One query reused for every probe (a ray per body per tick otherwise allocates an object and an array each time).
+var _query: PhysicsRayQueryParameters3D = null
+var _query_body: int = 0
 
 
 ## Name, field, default, description and range of each cvar.
@@ -120,10 +123,16 @@ func is_surfing(body: Node3D) -> bool:
 	var yes := false
 	var world := body.get_world_3d()
 	if world != null:
-		var from := body.global_position + Vector3.UP * 0.3
-		var q := PhysicsRayQueryParameters3D.create(from, body.global_position + Vector3.DOWN * probe, mask)
-		if body is CollisionObject3D:
-			q.exclude = [(body as CollisionObject3D).get_rid()]
+		var pos := body.global_position
+		if _query == null:
+			_query = PhysicsRayQueryParameters3D.new()
+		var q := _query
+		q.from = pos + Vector3.UP * 0.3
+		q.to = pos + Vector3.DOWN * probe
+		q.collision_mask = mask
+		if _query_body != id:
+			_query_body = id
+			q.exclude = [(body as CollisionObject3D).get_rid()] if body is CollisionObject3D else []
 		var hit := world.direct_space_state.intersect_ray(q)
 		yes = not hit.is_empty() and is_ramp_normal(hit.get("normal", Vector3.UP))
 	if _seen.size() > 256:

@@ -100,8 +100,8 @@ func advance(body: Node3D, delta: float) -> void:
 	# A respawn or a correction is not a slide.
 	if speed > 60.0:
 		speed = 0.0
-	var want: bool = enabled and bool((st["sliding"] as Callable).call())
 	var on: bool = st.get("on", false)
+	var want: bool = enabled and _worth_asking(on, speed) and bool((st["sliding"] as Callable).call())
 	if not want:
 		if on:
 			_stop(body)
@@ -131,6 +131,12 @@ func advance(body: Node3D, delta: float) -> void:
 	if vol <= 0.0:
 		return
 	st["handle"] = manager.play_at(_sound_for(surface), pos, vol, pitch)
+
+
+## Whether to ask the body's `sliding` callable this tick; false reads as "not sliding". A subclass skips the question
+## when the answer cannot be heard (a body not yet playing, too slow to be audible).
+func _worth_asking(_playing: bool, _speed: float) -> bool:
+	return true
 
 
 ## The loop to play on [param surface]; a subclass swaps it.

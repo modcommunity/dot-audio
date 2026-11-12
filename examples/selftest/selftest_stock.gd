@@ -497,7 +497,8 @@ func _test_cheap_starts() -> void:
 	var other := DotAudioStock.directory().path_join("footsteps/footstep_wood_1.ogg")
 	var _h := sink.play({"id": "step", "path": other, "kind": DotAudioDef.Kind.FLAT, "priority": 50})
 	sink.close()
-	_check(not sink._pcm.has(other) and sink._pcm_jobs.is_empty(), "pcm_max_seconds 0 turns the decoding off")
+	var pcm: GDScript = DotAudioSinkGodot._PCM
+	_check(not pcm._copies.has(other) and not pcm._jobs.has(other), "pcm_max_seconds 0 turns the decoding off")
 
 	sink.bank = {"res://dot_audio_probe/absent.ogg": DotAudioSynth.bake(300.0, 300.0, 0.05, 0.2, 0.0)}
 	var absent := {"id": "x", "path": "res://dot_audio_probe/absent.ogg", "kind": DotAudioDef.Kind.FLAT, "priority": 90}

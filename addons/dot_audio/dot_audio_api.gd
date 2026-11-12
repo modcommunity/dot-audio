@@ -27,5 +27,6 @@ extends RefCounted
 # 15: DotAudioSink.close(); DotAudioSinkGodot.pcm_max_seconds and pcm_budget_bytes; DotAudioFootsteps.hear_distance (a short compressed
 #     stream is decoded to PCM off the game thread after its first play, so starting it again is cheap).
 # 16: DotVoiceQueue (one announcer or medal line at a time, by priority).
-const LEVEL := 16
+# 17: sink/dot_audio_pcm.gd copy_for/is_copy/collect/clear: the decoded copies kept once per process, for a voice pool outside the sink.
+const LEVEL := 17
 const OLDEST := 1

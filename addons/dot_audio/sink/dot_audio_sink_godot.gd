@@ -70,14 +70,6 @@ var pcm_budget_bytes: int = 64 * 1024 * 1024
 
 const _PCM := preload("dot_audio_pcm.gd")
 
-## Decodes running at once: the worker pool is shared with whatever else the game threads.
-const PCM_JOBS := 2
-
-var _pcm: Dictionary = {}
-var _pcm_copies: Dictionary = {}
-var _pcm_jobs: Dictionary = {}
-var _pcm_skipped: Dictionary = {}
-var _pcm_bytes := 0
 
 
 func _init(p_host: Node = null, p_capacity: int = 32) -> void:
@@ -105,7 +97,7 @@ func play(request: Dictionary) -> int:
 	player.stream = stream
 	_configure(player, kind, request)
 	# A decoded copy is stored with headroom and made up here. See the decoder.
-	var trim_db := _PCM.HEADROOM_DB if stream is AudioStreamWAV and _pcm_copies.has(stream) else 0.0
+	var trim_db := _PCM.HEADROOM_DB if _PCM.is_copy(stream) else 0.0
 	if trim_db != 0.0:
 		player.set(&"volume_db", float(request.get("volume_db", 0.0)) + trim_db)
 
@@ -178,61 +170,12 @@ func _configure(player: Node, kind: int, request: Dictionary) -> void:
 ## copy's ends are not sample-exact, and a seam clicks), never without threads (the decode
 ## would run inline, and it is slower than the start it saves).
 func _pcm_for(path: String, stream: AudioStream) -> AudioStream:
-	if _pcm.has(path):
-		return _pcm[path] as AudioStream
-	if _pcm_skipped.has(path):
-		return stream
-	if _pcm_jobs.has(path):
-		_collect_pcm(false)
-		return _pcm.get(path, stream) as AudioStream
-	if not (stream is AudioStreamOggVorbis or stream is AudioStreamMP3):
-		_pcm_skipped[path] = true
-		return stream
-	var rate := int(AudioServer.get_mix_rate())
-	var seconds := stream.get_length()
-	# Booked as stereo until the decode says otherwise.
-	var cost := int(seconds * float(rate)) * 4
-	if seconds <= 0.0 or seconds > pcm_max_seconds or _pcm_bytes + cost > pcm_budget_bytes or not _threaded():
-		_pcm_skipped[path] = true
-		return stream
-	if _pcm_jobs.size() >= PCM_JOBS:
-		_collect_pcm(false)
-		if _pcm_jobs.size() >= PCM_JOBS:
-			return stream
-	var out: Array = []
-	var task := WorkerThreadPool.add_task(_PCM.decode.bind(stream, rate, out), false, "dot-audio pcm")
-	_pcm_jobs[path] = [task, out, cost]
-	_pcm_bytes += cost
-	return stream
-
-
-## Takes in every finished decode; with [param wait], blocks for the ones still running.
-func _collect_pcm(wait: bool) -> void:
-	for path: String in _pcm_jobs.keys():
-		var job: Array = _pcm_jobs[path]
-		var task := int(job[0])
-		if not wait and not WorkerThreadPool.is_task_completed(task):
-			continue
-		var _err := WorkerThreadPool.wait_for_task_completion(task)
-		_pcm_jobs.erase(path)
-		_pcm_bytes -= int(job[2])
-		var out: Array = job[1]
-		if out.is_empty():
-			_pcm_skipped[path] = true
-			continue
-		var wav := out[0] as AudioStreamWAV
-		_pcm_bytes += wav.data.size()
-		_pcm[path] = wav
-		_pcm_copies[wav] = true
-
-
-func _threaded() -> bool:
-	return OS.get_processor_count() > 1 and (not OS.has_feature("web") or OS.has_feature("threads"))
+	return _PCM.copy_for(path, stream, pcm_max_seconds, pcm_budget_bytes)
 
 
 ## Waits for the decodes still running, so the worker pool shuts down with none of them left.
 func close() -> void:
-	_collect_pcm(true)
+	_PCM.collect(true)
 
 
 ## The stream at [param path]: the imported resource when the build has it, else the file's
@@ -273,10 +216,11 @@ static func stream_at(path: String) -> AudioStream:
 	return raw
 
 
-## Drops [method stream_at]'s cache. Call after the last manager has left the tree, before
+## Drops [method stream_at]'s cache and the decoded PCM copies. Call after the last manager has left the tree, before
 ## `quit()`, so a process exits with no stream still in use.
 static func clear_streams() -> void:
 	_RAW.clear()
+	_PCM.clear()
 
 
 ## Whether the file a path's [code].import[/code] marker names is there. True when there is

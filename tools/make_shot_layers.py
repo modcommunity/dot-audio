@@ -224,4 +224,5 @@ def main():
     print("suppressed 4 variants")
 
 
-main()
+if __name__ == "__main__":
+    main()

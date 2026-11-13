@@ -28,5 +28,6 @@ extends RefCounted
 #     stream is decoded to PCM off the game thread after its first play, so starting it again is cheap).
 # 16: DotVoiceQueue (one announcer or medal line at a time, by priority).
 # 17: sink/dot_audio_pcm.gd copy_for/is_copy/collect/clear: the decoded copies kept once per process, for a voice pool outside the sink.
-const LEVEL := 17
+# 18: dot_audio_pcm.gd pump()/slice_usec: without threads (the web export) the decode is sliced on the game thread, not skipped.
+const LEVEL := 18
 const OLDEST := 1

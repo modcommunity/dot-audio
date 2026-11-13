@@ -167,8 +167,9 @@ func _configure(player: Node, kind: int, request: Dictionary) -> void:
 ##
 ## [b]The first play is the compressed one[/b] and starts the decode on a worker thread; a
 ## later play of the same path picks the copy up. Never for a looping request (the resampled
-## copy's ends are not sample-exact, and a seam clicks), never without threads (the decode
-## would run inline, and it is slower than the start it saves).
+## copy's ends are not sample-exact, and a seam clicks). Without threads (the web export) the
+## decode is sliced across frames on the game thread instead, and the held copies are capped
+## lower (see dot_audio_pcm.gd).
 func _pcm_for(path: String, stream: AudioStream) -> AudioStream:
 	return _PCM.copy_for(path, stream, pcm_max_seconds, pcm_budget_bytes)
 

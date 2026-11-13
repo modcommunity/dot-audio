@@ -512,6 +512,62 @@ func _test_cheap_starts() -> void:
 	host.queue_free()
 
 
+## Without threads (the web export) the decode is sliced on the game thread and converted natively; the
+## suite takes that path on purpose here and holds it to the threaded decode's result.
+func _test_sliced_decode() -> void:
+	_section("Without threads a short sound is decoded in slices, to the same PCM")
+	var pcm: GDScript = DotAudioSinkGodot._PCM
+	pcm.clear()
+	pcm.slice_always = true
+	var rate := int(AudioServer.get_mix_rate())
+	var step := DotAudioStock.directory().path_join("footsteps/footstep_wood_0.ogg")
+	var shot := DotAudioStock.directory().path_join("shots/rifle/attack_0.ogg")
+	var bed := DotAudioStock.directory().path_join("moods/industrial/machine_a.ogg")
+	var sources := {step: DotAudioSinkGodot.stream_at(step), shot: DotAudioSinkGodot.stream_at(shot), bed: DotAudioSinkGodot.stream_at(bed)}
+	var first := pcm.copy_for(step, sources[step]) as AudioStream
+	var _s := pcm.copy_for(shot, sources[shot]) as AudioStream
+	var _d := pcm.copy_for(bed, sources[bed]) as AudioStream
+	_check(first == sources[step] and pcm._slices.size() == 3 and pcm._jobs.is_empty(), "the first ask hands back the compressed stream and queues a slice, no worker")
+	var t := Time.get_ticks_usec()
+	pcm.pump(0)
+	var one := Time.get_ticks_usec() - t
+	_check(pcm._slices.size() == 3 and not pcm._copies.has(step), "a pump does one step at least and stops at its budget (%d us)" % one)
+	var frames := 0
+	while pcm._slices.size() > 0 and frames < 2000:
+		await get_tree().process_frame
+		frames += 1
+	_check(pcm._copies.has(step) and pcm._copies.has(shot) and pcm._copies.has(bed) and not pcm._pumping, "the frame pumps them by itself, then lets go of the frame (%d frames)" % frames)
+	for key: String in [step, shot, bed]:
+		var out: Array = []
+		pcm.decode(sources[key], rate, out)
+		var want := out[0] as AudioStreamWAV if out.size() == 1 else null
+		var got := pcm._copies.get(key) as AudioStreamWAV
+		var worst := 99999
+		if want != null and got != null and want.data.size() == got.data.size():
+			worst = 0
+			for i in range(0, want.data.size() - 1, 2):
+				worst = maxi(worst, absi(want.data.decode_s16(i) - got.data.decode_s16(i)))
+		_check(got != null and want != null and got.stereo == want.stereo and got.mix_rate == want.mix_rate and pcm.is_copy(got) and worst <= 2,
+			"%s: same samples as the threaded decode (stereo %s, %d bytes, worst %d LSB)" % [key.get_file(), got.stereo if got != null else false, got.data.size() if got != null else 0, worst])
+	var pairs := PackedVector2Array([Vector2(0.5, -0.5), Vector2(0.25, 0.0), Vector2(-1.2, 1.2)])
+	var native := pcm._wav_native(pairs, rate) as AudioStreamWAV
+	var off := 99999
+	if native != null and native.stereo and native.data.size() == 12:
+		off = 0
+		for i in range(6):
+			var f: float = pairs[i / 2].x if i % 2 == 0 else pairs[i / 2].y
+			off = maxi(off, absi(native.data.decode_s16(i * 2) - int(f * 0.5 * 32767.0)))
+	_check(off <= 1, "two channels that differ stay two, at half scale (worst %d LSB)" % off)
+	pcm.clear()
+	pcm._bytes = pcm.WEB_BUDGET_BYTES
+	_check(pcm.copy_for(step, sources[step]) == sources[step] and pcm._slices.is_empty(), "the held copies stop at the web budget, whatever the caller's")
+	pcm._bytes = 0
+	var _q: AudioStream = pcm.copy_for(step, sources[step])
+	pcm.clear()
+	_check(pcm._slices.is_empty() and not pcm._pumping and pcm._copies.is_empty(), "clear() drops the queued slices and lets go of the frame")
+	pcm.slice_always = false
+
+
 func _cheap_stream(host: Node, handle: int) -> AudioStream:
 	for child in host.get_children():
 		if int(child.get_meta(&"dot_audio_handle", 0)) == handle:

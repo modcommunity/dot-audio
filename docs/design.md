@@ -24,7 +24,7 @@ The obvious implementation (`AudioStreamPlayer.new()`, `play()`, `queue_free()` 
 | `DotAudioDef` | One sound, as a document. Names a file by path and never loads one. |
 | `DotAudioCatalogue` | All of them. `validate()` asks about the document; `missing_files()` asks about the disk. |
 | `DotAudioSink` | Where a sound goes, and the honest device check. |
-| `DotAudioSinkGodot` | A fixed pool with priority stealing, looping, the synth `bank`. A short compressed stream is decoded to PCM on a worker thread after its first play (`pcm_max_seconds`, `pcm_budget_bytes`), so a sound that fires many times a second does not set a decoder up each time. |
+| `DotAudioSinkGodot` | A fixed pool with priority stealing, looping, the synth `bank`. A short compressed stream is decoded to PCM on a worker thread after its first play (without threads, as on the web, in slices on the game thread) (`pcm_max_seconds`, `pcm_budget_bytes`), so a sound that fires many times a second does not set a decoder up each time. |
 | `DotAudioSinkNull` | Records what it would have played. |
 | `DotAudioMixer` | The sliders, and the `linear_to_db` curve. A `DotConfig`. |
 | `DotAudioManager` | Ids in, limits applied, requests out; `move`, `shape` and `stop` a playing voice by handle. |

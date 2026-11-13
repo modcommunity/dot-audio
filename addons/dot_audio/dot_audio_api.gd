@@ -29,5 +29,6 @@ extends RefCounted
 # 16: DotVoiceQueue (one announcer or medal line at a time, by priority).
 # 17: sink/dot_audio_pcm.gd copy_for/is_copy/collect/clear: the decoded copies kept once per process, for a voice pool outside the sink.
 # 18: dot_audio_pcm.gd pump()/slice_usec: without threads (the web export) the decode is sliced on the game thread, not skipped.
-const LEVEL := 18
+# 19: DotAudioSlide.reach and reach_margin (DotAudioSurf inherits them): a body out of earshot of the listener is not asked.
+const LEVEL := 19
 const OLDEST := 1

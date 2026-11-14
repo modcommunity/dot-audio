@@ -1,78 +1,13 @@
-This is the **audio** asset for TMC's **Dot** collection. It adds the part of a game that decides what is heard, how loud, how many at once, and what happens when there is no sound card at all.
+# dot-audio
 
-This collection of assets provides modular building blocks for creating games and applications within the TMC ecosystem, ensuring consistency and interoperability across all `dot-*` assets. This includes core functionality, networking, authentication, cloud integration, and more.
+Game audio for Godot 4.7+ that decides what is heard, how loud, how many sounds at once, and what happens when there is no sound card. Part of the [dot-*](https://github.com/modcommunity) family. It needs only [dot-core](https://github.com/modcommunity/dot-core).
 
-**These assets are COMPLETELY OPEN SOURCE**. You are free to use, modify, and distribute them under the terms of the MIT license. The only thing not open source is the back-end web infrastructure. So if you opt into using your own authentication backend instead of integrating with TMC, you will need to build and integrate your own back-end infrastructure.
+## Install
 
-## From Maintainer & WARNING
-This asset, along with all the others, was built initially with **Claude Code** and will continue to be maintained and extended using it. This is because I (`gamemann`) cannot build the entire TMC platform alone (I wish I could lol).
+1. Copy `addons/dot_audio/` and `addons/dot_core/` into your project.
+2. Enable dot-audio in *Project > Project Settings > Plugins*.
 
-**Please treat this as partially tested.** Every asset has its own headless test suite and those suites pass, but very little of this has been in front of real players yet. Expect rough edges, and please report anything you run into.
-
-## It ships no game audio
-
-A sound is an id and a **path**, never a loaded `AudioStream`. Two reasons, and the second is the harder one:
-
-- A dedicated server validates the whole catalogue without a sound card and without the files.
-- A game delivered as a content pack is mounted at runtime, and a catalogue that `preload`s cannot describe delivered content at all.
-
-So `DotAudioCatalogue.validate()` checks everything except whether the file exists, and `missing_files()` is a separate question, asked by the client that is about to need them.
-
-It ships no game audio, and a game with no files can still make a noise. `DotAudioSynth` bakes short sounds out of a sine sweep, a deterministic hash and an attack-decay envelope, and `DotAudioSinkGodot.bank` holds them — **behind** the filesystem, so the moment a real file exists at the path a def already names, that file wins and nobody edits a line:
-
-```gdscript
-var bank := DotAudioSynth.bank(catalogue, {
-    &"fire_rifle": DotAudioSynth.Voice.SHOT,
-    &"hit_marker": DotAudioSynth.Voice.BLIP,
-})
-(audio.sink as DotAudioSinkGodot).bank = bank
-```
-
-Nothing about it is random: the grit comes from a hash rather than `randf()`, so the bank is byte-identical on every machine and every run. That is what makes it something a test can assert about rather than listen to.
-
-## The engine reports a working sound card when there is none
-
-In a headless run `AudioServer.get_mix_rate()` is 44100, the device list is `["Default"]` and the output latency is 0.0. **Only `get_driver_name()` says `"Dummy"`.** A capability check built on any of the others passes on a machine with no audio at all, and the symptom is silence for ever with nothing reporting a problem.
-
-That is why there is a `DotAudioSink` interface. `DotAudioSinkNull` is not a mock. The real catalogue, the real culling, the real cooldowns, the real concurrency caps and the real music state machine all run above it, and only the four lines that would create an `AudioStreamPlayer` are replaced. A headless suite is then a test of the system rather than of a stand-in, and a dedicated server can decide what its clients are told to play.
-
-## A volume slider is not decibels
-
-Mapping a 0..1 slider straight onto `volume_db`, even scaled to -60..0, gives a control where everything below about 0.9 is inaudible and two thirds of the travel does nothing. Hearing is roughly logarithmic, so the slider carries a **linear amplitude** and `linear_to_db` converts. Zero is a muted bus rather than -60 dB, because a slider dragged to the bottom should be silence and not a number that a later `+3 dB` turns back into sound.
-
-`DotAudioMixer` is a `DotConfig`, so dot-ui generates the screen and dot-settings persists it, with nothing here knowing either exists.
-
-## Three limits, which are three different problems
-
-| | |
-| --- | --- |
-| `max_concurrent` | Twelve identical rifles half a millisecond apart is not twelve gunshots. It is one gunshot twelve times as loud, with comb filtering. Three sounds like a crowd. |
-| `cooldown_ms` | A footstep triggered from a physics callback fires twice in a frame, and the second one is inaudible and still costs a voice. |
-| `max_distance` | A cull, not a curve. A sound at 400 metres attenuated to inaudible still costs a stream load, a voice and a position update every frame. |
-
-And the pool: `DotAudioSinkGodot` creates `voices` players once and never frees them. The obvious spelling, which is to create, play and `queue_free` on finished, has no ceiling, and a firefight is a hundred nodes created and destroyed per second, which on the web is a visible hitch every time anything happens. When the pool is full the **lowest-priority** voice is stolen, and if nothing is lower the new sound is refused: a gunshot losing to a footstep because the footstep started first is the failure mode of every fixed pool with no priority.
-
-## Footsteps, ambience and one loudness for every game
-
-Three things every game needs and none should write again:
-
-- **`DotAudioFootsteps`**: footsteps for the player, other players and bots, one per stride of distance travelled (so a body moved by the network steps at the rate it moves), silent when creeping, by the surface underfoot (a collider's `surface` meta, a `surface_wood` group, or a name like `Floor_Wood`).
-- **`DotAudioSlide`**: the looping scrape of a sliding body, by surface (`slide_<surface>`, the generic ground scrape when none), louder and higher with speed, one voice per sliding body, positional; `slide_started` / `slide_stopped` fire once per slide, `enabled` is the server's switch and `volume` the player's slider.
-- **`DotAudioSurf`** and **`DotAudioSurfRules`**: a body on a ramp too steep to stand on glides instead of walking. `DotAudioFootsteps.surf_rules` silences its steps and landings there, and `DotAudioSurf.keep_surfers` plays the stock `surf_glide` loop (synthesised, CC0, see `stock/CREDITS.md`) quieter at low speed, louder and higher at speed. Every number is a `sv_surf_*` cvar (`sounds`, `volume`, `quiet_speed`, `full_speed`, `pitch_low`, `pitch_high`, `mute_steps`) via `bind_cvars`, and `apply_values` takes a profile's dictionary.
-- **`DotAudioAmbience`**: a bed per map and zones that swap it (a house, a tunnel), crossfaded, so no game is ever digital silence between events.
-- **A loudness standard**: −17 LUFS integrated and −1 dBTP, a master limiter on by default, and `addons/dot_audio/tools/loudness.sh`, which plays a game under xvfb with a stand-in walking and prints its level.
-
-The stock files are in `addons/dot_audio/stock/`, all CC0: footsteps from [Kenney](https://www.kenney.nl)'s Impact Sounds, and nine ambience beds: wind and birdsong cut from Thimras's CC0 park recordings (`tools/make_real_beds.sh`), the rest synthesised by `tools/make_ambience.py` (credits in `stock/CREDITS.md`). `DotAudioStock.add_to(catalogue)` adds them as ordinary defs, and a game's own def with the same id wins. The reasoning is in [docs/loudness.md](docs/loudness.md).
-
-## A creepy-ambience layer
-
-`DotAmbience` plays a mood: looping beds plus sparse random one-shots from a random direction, crossfaded when the mood changes, quiet by default, with pause/duck/hush holders and live settings (`DotAmbienceConfig`: on/off, volume, one-shot frequency, mood override, allowed moods, a directory of the owner's own sounds). The addon ships no sounds for it; a game ships a `moods.json` set. [docs/ambience.md](docs/ambience.md)
-
-## Layered shots that know the room
-
-`DotShotDef` (a Resource: attack, body, five tail classes, far and suppressed sets, three to six variants each) and `DotShotPlayer` play a shot as layers: close shots as attack, body and the tail of the room you are in, far shots as a low-passed set, crossfaded by distance and delayed by distance over the speed of sound; no variant repeats the one before, with a little pitch and gain jitter. `DotAudioEnclosure` casts 16 to 32 fibonacci rays over a few frames, reads mean hit distance as room size and the miss fraction as openness, smooths both, picks the tail class (small, medium, large, hall, outdoor) and drives one reverb bus. `DotShotRules` holds the `snd_shot_*` cvars, all on by default. `DotAudioShotStock` gives a stock shot per weapon class. A pack assigns its own files through `DotShotDef`. Sources are CC0 and credited in `addons/dot_audio/stock/CREDITS.md`: The Free Firearm Sound Library, Gunshots by kurt and Eldritch Grim (OpenGameArt); Gunshot Sounds by Tabasco was consulted and contributes no file.
-
-## Using it
+## Quick start
 
 ```gdscript
 var audio := DotAudioManager.new()
@@ -87,22 +22,86 @@ audio.play_music(&"combat", 1.5)     # crossfade; asking for what is playing doe
 audio.duck(&"radio")                 # reference-counted, so two ducks do not fight
 ```
 
-Hand it dot-randomness' stream and a shot's pitch and variant are the same on the server and on every client watching, which is what makes an audio bug reproducible:
+Give it a seeded stream and a shot's pitch and variant match on the server and every client:
 
 ```gdscript
 audio.roll_source = rng.stream(&"audio")
 ```
 
-## Installing
+## Sounds are paths, not streams
 
-Copy `addons/dot_audio/` and [`dot-core`](https://github.com/modcommunity/dot-core)'s `addons/dot_core/` into your project and enable dot-audio in **Project → Project Settings → Plugins**.
+A sound is an id plus a path, never a loaded `AudioStream`. A dedicated server can then validate the whole catalogue with no sound card and no files, and a game delivered as a content pack can mount its files at runtime. `DotAudioCatalogue.validate()` checks everything except whether the file exists. `missing_files()` answers that separately, on the client that needs them.
 
-## Dependencies
+Without any files a game can still make noise. `DotAudioSynth` bakes short sounds deterministically (sine sweep, hash grit, envelope) and `DotAudioSinkGodot.bank` holds them behind the filesystem. As soon as a real file exists at the path a definition names, that file wins.
 
-[dot-core](https://github.com/modcommunity/dot-core). Nothing else.
+```gdscript
+var bank := DotAudioSynth.bank(catalogue, {
+    &"fire_rifle": DotAudioSynth.Voice.SHOT,
+    &"hit_marker": DotAudioSynth.Voice.BLIP,
+})
+(audio.sink as DotAudioSinkGodot).bank = bank
+```
+
+## Headless and sinks
+
+In a headless run Godot reports a 44100 Hz mix rate and a "Default" device, as if a sound card existed. Only `AudioServer.get_driver_name()` says `"Dummy"`. dot-audio therefore picks its sink by driver name. `DotAudioSinkNull` runs the real catalogue, culling, cooldowns, concurrency limits and music state machine, and replaces only the code that would create an `AudioStreamPlayer`. A dedicated server can use it to decide what clients should play.
+
+## Volume
+
+`DotAudioMixer` sliders carry a linear amplitude from 0 to 1, and `linear_to_db` converts it. Zero means a muted bus. It is a `DotConfig`, so dot-ui can generate a settings screen and dot-settings can save it.
+
+## Limits per sound
+
+These are per-sound settings on `DotAudioDef`. The defaults are shown; every one is configurable.
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `max_concurrent` | 4 | Stops many identical sounds stacking into one very loud one. |
+| `cooldown_ms` | 0 (off) | Drops a repeat that arrives too soon, such as a double footstep in one frame. |
+| `max_distance` | 200 (0 = no cull) | Culls a sound that is too far away to hear before it costs a voice. |
+| `voices` (on the manager) | 32 | Size of the player pool. Players are created once and reused. |
+
+When the pool is full the lowest-priority voice is stolen. If nothing has lower priority, the new sound is refused.
+
+## Features
+
+| Feature | What it does |
+| --- | --- |
+| `DotAudioFootsteps` | One step per stride for the player, other players and bots, by surface (a collider's `surface` meta, a `surface_wood` group, or a name like `Floor_Wood`). Silent when creeping. |
+| `DotAudioSlide` | A looping scrape by surface, louder and higher with speed. One positional voice per sliding body. |
+| `DotAudioSurf` / `DotAudioSurfRules` | A glide loop on ramps too steep to stand on, and silenced steps there. Every value is an `sv_surf_*` cvar. |
+| `DotAudioAmbience` | A crossfaded ambience bed per map, with zones that swap it. |
+| `DotAmbience` | A mood layer of looping beds and sparse one-shots from random directions. See [docs/ambience.md](docs/ambience.md). Ships no sounds; a game supplies a `moods.json`. |
+| `DotShotDef` / `DotShotPlayer` | Shots played as layers (attack, body, tail, far, suppressed), crossfaded and delayed by distance. |
+| `DotAudioEnclosure` | Casts rays to estimate room size and openness, picks a tail class and drives one reverb bus. |
+| `DotShotRules` | The `snd_shot_*` cvars for the shot system. |
+| Loudness | Target of -17 LUFS integrated and -1 dBTP with a master limiter on by default. `addons/dot_audio/tools/loudness.sh` measures a game. See [docs/loudness.md](docs/loudness.md). |
+
+## Stock sounds
+
+`DotAudioStock.add_to(catalogue)` adds the bundled sounds as ordinary definitions. A game's own definition with the same id wins. Weapon sounds are added with `DotAudioWeaponStock.add_to(catalogue)`; see [docs/weapons.md](docs/weapons.md).
+
+Full per-file credits are in [addons/dot_audio/stock/CREDITS.md](addons/dot_audio/stock/CREDITS.md). Everything in `stock/` is CC0.
+
+| Sounds | Source | Licence |
+| --- | --- | --- |
+| Footsteps | [Kenney](https://www.kenney.nl), Impact Sounds | CC0 |
+| Wind and birdsong beds | Thimras, park recordings | CC0 |
+| Other ambience beds, surf glide | Synthesised by `tools/make_ambience.py` | CC0 |
+| Weapon sounds | CC0 recordings cut and layered by `tools/make_weapon_stock.py` | CC0 |
+| Shot sources | The Free Firearm Sound Library; Gunshots by kurt and Eldritch Grim (OpenGameArt) | CC0 |
+
+## Test
+
+```bash
+godot --headless --path . --import
+godot --headless --path . res://examples/audio_selftest.tscn
+```
+
+## Status
+
+Built and maintained with Claude Code. The test suites pass, but little of this has been in front of real players yet. Please report rough edges by opening an issue.
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
-
-Weapon sounds: `stock/weapons/` has 84 sounds in 387 files (CC0 recordings cut and layered by `tools/make_weapon_stock.py`), as `weapon_<name>` defs through `DotAudioWeaponStock.add_to(catalogue)`, and the packs read them through dot-weapon's `DotWeaponSound`. The audit and the table are in [docs/weapons.md](docs/weapons.md).
+MIT. See [LICENSE](LICENSE). Only the TMC back-end web infrastructure is not open source.

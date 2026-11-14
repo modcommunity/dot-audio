@@ -1,5 +1,3 @@
-# dot-audio
-
 Game audio for Godot 4.7+ that decides what is heard, how loud, how many sounds at once, and what happens when there is no sound card. Part of the [dot-*](https://github.com/modcommunity) family. It needs only [dot-core](https://github.com/modcommunity/dot-core).
 
 ## Install

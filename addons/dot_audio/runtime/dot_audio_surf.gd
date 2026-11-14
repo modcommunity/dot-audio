@@ -30,6 +30,22 @@ func _native_quiet() -> float:
 	return rules.quiet_speed
 
 
+func _native_probe() -> Object:
+	var probe := rules.native_probe()
+	if probe != null:
+		_native_args = rules.native_args(_native_args)
+	return probe
+
+
+func _native_surfer(body: Node3D, sliding: Callable) -> bool:
+	return sliding.get_object() == self and sliding.get_method() == &"_is_surfer" \
+		and sliding.get_bound_arguments() == [body]
+
+
+func _native_surfing_on() -> bool:
+	return rules.enabled
+
+
 var _glide_ids: Array[StringName] = [DotAudioStock.SURF_GLIDE_ID]
 
 

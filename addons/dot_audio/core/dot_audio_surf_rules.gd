@@ -38,10 +38,10 @@ var _query_body: int = 0
 ## the extension is loaded, [member native_enabled] and [member use_native] are on and these rules are plain
 ## [DotAudioSurfRules]. Footsteps and the surf glide share it through [method native_probe].
 const NATIVE_CLASS := &"DotSimSurfProbe"
-## Whether the native probe is used when present (the parity suite turns it on).
-## Off by default: measured slower than this script (examples/steps_native_parity prints both; every engine
-## access costs more through the extension than from GDScript, and the pass is all engine accesses).
-static var native_enabled: bool = false
+## Whether the native probe is used when present. On by default: the packed native passes hold the bodies' state
+## and make about four engine calls a body, measured about twice as fast as this script for footsteps and surf
+## (examples/steps_native_parity prints both).
+static var native_enabled: bool = true
 ## These rules' own switch beside [member native_enabled].
 var use_native: bool = true
 static var _native_known: int = -1

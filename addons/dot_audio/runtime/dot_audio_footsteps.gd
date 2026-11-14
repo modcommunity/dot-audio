@@ -70,16 +70,20 @@ var _bodies: Dictionary = {}
 ## used when the extension is loaded, [member native_enabled] and [member use_native] are on and this node is a
 ## plain [DotAudioFootsteps] (a subclass may change any part of a step). On the web, or with no library, the script runs.
 const NATIVE_CLASS := &"DotSimAudioSteps"
-## Whether the native tick is used when present (the parity suite turns it on).
-## Off by default: measured slower than this script (examples/steps_native_parity prints both; every engine
-## access costs more through the extension than from GDScript, and the pass is all engine accesses).
-static var native_enabled: bool = false
+## Whether the native tick is used when present. On by default: the packed native passes hold the bodies' state
+## and make about four engine calls a body, measured about twice as fast as this script for footsteps and surf
+## (examples/steps_native_parity prints both).
+static var native_enabled: bool = true
 ## This node's own switch beside [member native_enabled].
 var use_native: bool = true
 static var _native_known: int = -1
 var _native: Object = null
 var _native_tun := PackedFloat64Array()
 var _native_surf_args := PackedFloat64Array()
+# Whether the native tick holds the bodies' state (last, travelled, air, grounded) instead of [member _bodies]:
+# loaded once ([method _native_load]) and kept there until the tracked set changes ([method _native_release]).
+var _native_owns: bool = false
+var _native_keys: Array = []
 
 
 ## Whether dot-sim's native audio tick is loaded and enabled.
@@ -95,6 +99,7 @@ static func native_available() -> bool:
 func track(body: Node3D, opts: Dictionary = {}) -> void:
 	if body == null:
 		return
+	_native_release()
 	_bodies[body] = {
 		"last": body.global_position if body.is_inside_tree() else Vector3.ZERO,
 		"travelled": 0.0, "air": 0.0, "grounded": true, "opts": opts,
@@ -112,10 +117,12 @@ func keep(bodies: Array, opts: Dictionary = {}) -> void:
 				track(b, opts)
 	for b: Variant in _bodies.keys():
 		if not seen.has(b):
+			_native_release()
 			_bodies.erase(b)
 
 
 func untrack(body: Node3D) -> void:
+	_native_release()
 	_bodies.erase(body)
 
 
@@ -135,6 +142,7 @@ func _physics_process(delta: float) -> void:
 	if use_native and native_available() and get_script() == DotAudioFootsteps:
 		_native_pass(delta)
 		return
+	_native_release()
 	for body: Variant in _bodies.keys():
 		if not is_instance_valid(body) or not (body as Node3D).is_inside_tree():
 			_bodies.erase(body)
@@ -142,10 +150,12 @@ func _physics_process(delta: float) -> void:
 		advance(body, delta)
 
 
-## [method _physics_process] natively: the same advance over [member _bodies] in place, the steps played here.
+## [method _physics_process] natively: the same advance over the bodies the native tick holds, the steps played here.
 func _native_pass(delta: float) -> void:
 	if _native == null:
 		_native = ClassDB.instantiate(NATIVE_CLASS)
+	if not _native_owns:
+		_native_load()
 	_native_tun.resize(6)
 	_native_tun[0] = quiet_speed
 	_native_tun[1] = run_speed
@@ -162,17 +172,73 @@ func _native_pass(delta: float) -> void:
 			_native_surf_args = surf_rules.native_args(_native_surf_args)
 	var hear := hear_distance if manager != null else 0.0
 	var ear := manager.listener_position if manager != null else Vector3.ZERO
-	var steps: Array = _native.call(&"steps_pass", _bodies, delta, _native_tun, ear, hear, surf,
+	var steps: Array = _native.call(&"steps_tick", delta, _native_tun, ear, hear, surf,
 		_native_surf_args, ground_probe, ground_mask)
 	for i in range(0, steps.size(), 2):
 		var body: Variant = steps[i]
+		var loudness := float(steps[i + 1])
+		if loudness < 0.0:
+			# Freed or out of the tree: the native tick dropped it already.
+			_bodies.erase(body)
+			var at := _native_keys.find(body)
+			if at >= 0:
+				_native_keys.remove_at(at)
+			continue
 		var st: Dictionary = _bodies.get(body, {})
 		if not st.is_empty() and is_instance_valid(body):
-			_step(body, st, float(steps[i + 1]))
+			_step(body, st, loudness)
+
+
+## Hands every body's state to the native tick (the `grounded` option is read here, once).
+func _native_load() -> void:
+	_native_keys = _bodies.keys()
+	var state := PackedFloat64Array()
+	state.resize(_native_keys.size() * 6)
+	var grounded: Array = []
+	grounded.resize(_native_keys.size())
+	for i in _native_keys.size():
+		var st: Dictionary = _bodies[_native_keys[i]]
+		var last: Vector3 = st["last"]
+		state[i * 6] = last.x
+		state[i * 6 + 1] = last.y
+		state[i * 6 + 2] = last.z
+		state[i * 6 + 3] = float(st["travelled"])
+		state[i * 6 + 4] = float(st["air"])
+		state[i * 6 + 5] = 1.0 if bool(st["grounded"]) else 0.0
+		var g: Variant = (st["opts"] as Dictionary).get("grounded")
+		grounded[i] = g if g is Callable else null
+	_native.call(&"steps_load", _native_keys, state, grounded)
+	_native_owns = true
+
+
+## Writes the native tick's state back into [member _bodies] (it keeps holding it). A suite calls this before
+## reading [member _bodies].
+func native_sync() -> void:
+	if not _native_owns or _native == null:
+		return
+	var state: PackedFloat64Array = _native.call(&"steps_state")
+	for i in mini(_native_keys.size(), state.size() / 6):
+		var st: Dictionary = _bodies.get(_native_keys[i], {})
+		if st.is_empty():
+			continue
+		st["last"] = Vector3(state[i * 6], state[i * 6 + 1], state[i * 6 + 2])
+		st["travelled"] = state[i * 6 + 3]
+		st["air"] = state[i * 6 + 4]
+		st["grounded"] = state[i * 6 + 5] != 0.0
+
+
+## Takes the state back from the native tick before [member _bodies] changes; the next native pass loads it again.
+func _native_release() -> void:
+	if not _native_owns:
+		return
+	native_sync()
+	_native_owns = false
+	_native_keys = []
 
 
 ## One body, one physics frame. Public so a suite can step it with no physics running.
 func advance(body: Node3D, delta: float) -> void:
+	_native_release()
 	var st: Dictionary = _bodies.get(body, {})
 	if st.is_empty():
 		return

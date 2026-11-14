@@ -331,9 +331,12 @@ func _compare() -> void:
 	_counts["play"] = int(_counts["play"]) + pa.size()
 	sa.forget()
 	sb.forget()
+	# The native tick holds the footstep state; written back here, outside the timed passes.
+	(b["steps"] as DotAudioFootsteps).native_sync()
 	_compare_state("footstep state", (a["steps"] as DotAudioFootsteps)._bodies, (b["steps"] as DotAudioFootsteps)._bodies,
 		["last", "travelled", "air", "grounded"])
 	for node in ["slide", "surf"]:
+		(b[node] as DotAudioSlide).native_sync()
 		_compare_state(node + " state", (a[node] as DotAudioSlide)._bodies, (b[node] as DotAudioSlide)._bodies,
 			["last", "on", "handle", "surface"])
 

@@ -31,6 +31,7 @@ extends RefCounted
 # 18: dot_audio_pcm.gd pump()/slice_usec: without threads (the web export) the decode is sliced on the game thread, not skipped.
 # 19: DotAudioSlide.reach and reach_margin (DotAudioSurf inherits them): a body out of earshot of the listener is not asked.
 # 20: DotAudioFootsteps, DotAudioSlide (and DotAudioSurf) and DotAudioSurfRules run dot-sim's native tick and probe when
-#     present: native_enabled (static), use_native, native_available(); DotAudioSurfRules.native_probe()/native_args().
+#     present: native_enabled (static), use_native, native_available(), native_sync();
+#     DotAudioSurfRules.native_probe()/native_args().
 const LEVEL := 20
 const OLDEST := 1

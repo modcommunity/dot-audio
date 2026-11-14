@@ -22,6 +22,14 @@ func _worth_asking(playing: bool, speed: float) -> bool:
 	return playing or speed >= rules.quiet_speed
 
 
+func _native_ok() -> bool:
+	return get_script() == DotAudioSurf
+
+
+func _native_quiet() -> float:
+	return rules.quiet_speed
+
+
 var _glide_ids: Array[StringName] = [DotAudioStock.SURF_GLIDE_ID]
 
 

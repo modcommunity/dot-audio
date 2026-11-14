@@ -6,6 +6,8 @@
 #   ln -s ../../dot-core/addons/dot_core addons/dot_core
 # Consumers copy both addons into their own project.
 /addons/dot_core
+# dot-sim's native library, optional: linked for examples/steps_native_parity (skips without it).
+/addons/dot_sim
 
 # Exports
 build/

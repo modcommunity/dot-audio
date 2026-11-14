@@ -35,6 +35,27 @@ var reach_margin: float = 4.0
 # body -> {last, handle, surface, sliding: Callable, opts}
 var _bodies: Dictionary = {}
 
+## dot-sim's native gate ([code]DotSimAudioSteps[/code]): the bodies out of reach, switched off, too slow or not
+## sliding are settled natively, to the bit (dot-audio's examples/steps_native_parity); the rest advance here. Used when the
+## extension is loaded, [member native_enabled] and [member use_native] are on and this node is a plain
+## [DotAudioSlide] or [DotAudioSurf]. On the web, or with no library, the script runs.
+const NATIVE_CLASS := &"DotSimAudioSteps"
+## Whether the native gate is used when present (the parity suite turns it on).
+## Off by default: measured slower than this script (examples/steps_native_parity prints both; every engine
+## access costs more through the extension than from GDScript, and the pass is all engine accesses).
+static var native_enabled: bool = false
+## This node's own switch beside [member native_enabled].
+var use_native: bool = true
+static var _native_known: int = -1
+var _native: Object = null
+
+
+## Whether dot-sim's native audio tick is loaded and enabled.
+static func native_available() -> bool:
+	if _native_known < 0:
+		_native_known = 1 if ClassDB.class_exists(NATIVE_CLASS) else 0
+	return native_enabled and _native_known == 1
+
 
 ## Starts following a body. [param sliding] returns whether it slides now.
 func track(body: Node3D, sliding: Callable, opts: Dictionary = {}) -> void:
@@ -87,6 +108,9 @@ func _physics_process(delta: float) -> void:
 		manager = DotRegistry.get_node_service(DotAudioManager.SERVICE) as DotAudioManager
 	var reach_sq := reach_squared()
 	var ear := manager.listener_position if manager != null else Vector3.ZERO
+	if use_native and native_available() and _native_ok():
+		_native_pass(delta, reach_sq, ear)
+		return
 	for body: Variant in _bodies.keys():
 		if not is_instance_valid(body):
 			_drop_freed(body)
@@ -99,6 +123,39 @@ func _physics_process(delta: float) -> void:
 			out_of_reach(b)
 		else:
 			advance(b, delta)
+
+
+## Whether the native gate decides as this script would: only for the exact class (a subclass may ask differently).
+func _native_ok() -> bool:
+	return get_script() == DotAudioSlide
+
+
+## The speed a body not yet playing must reach to be asked, for the native gate; negative asks every body.
+func _native_quiet() -> float:
+	return -1.0
+
+
+## [method _physics_process] with the native gate: what it leaves (a freed or out-of-tree body, a loop to stop out of
+## reach, a body to advance) is handled here, in order.
+func _native_pass(delta: float, reach_sq: float, ear: Vector3) -> void:
+	if _native == null:
+		_native = ClassDB.instantiate(NATIVE_CLASS)
+	var rest: Array = _native.call(&"slide_pass", _bodies, delta, reach_sq, ear, enabled, _native_quiet())
+	for i in range(0, rest.size(), 2):
+		var body: Variant = rest[i]
+		var code := int(rest[i + 1])
+		if not is_instance_valid(body):
+			_drop_freed(body)
+			continue
+		if not _bodies.has(body):
+			continue
+		var b := body as Node3D
+		if code == 0:
+			_bodies.erase(body)
+		elif code == 1:
+			out_of_reach(b)
+		else:
+			_advance(b, delta, code == 3)
 
 
 ## [member reach] squared as this frame uses it; 0 when every body is asked (no manager, no catalogue,
@@ -134,6 +191,11 @@ func out_of_reach(body: Node3D) -> void:
 
 ## One body, one physics frame. Public so a suite can step it with no physics running.
 func advance(body: Node3D, delta: float) -> void:
+	_advance(body, delta, false)
+
+
+## [method advance]; [param asked]: the body was already asked this tick and slides.
+func _advance(body: Node3D, delta: float, asked: bool) -> void:
 	var st: Dictionary = _bodies.get(body, {})
 	if st.is_empty():
 		return
@@ -145,7 +207,7 @@ func advance(body: Node3D, delta: float) -> void:
 	if speed > 60.0:
 		speed = 0.0
 	var on: bool = st.get("on", false)
-	var want: bool = enabled and _worth_asking(on, speed) and bool((st["sliding"] as Callable).call())
+	var want: bool = asked or (enabled and _worth_asking(on, speed) and bool((st["sliding"] as Callable).call()))
 	if not want:
 		if on:
 			_stop(body)

@@ -34,6 +34,42 @@ var _seen: Dictionary = {}
 var _query: PhysicsRayQueryParameters3D = null
 var _query_body: int = 0
 
+## dot-sim's native probe ([code]DotSimSurfProbe[/code]): the same ray, ramp test and per-frame cache, used when
+## the extension is loaded, [member native_enabled] and [member use_native] are on and these rules are plain
+## [DotAudioSurfRules]. Footsteps and the surf glide share it through [method native_probe].
+const NATIVE_CLASS := &"DotSimSurfProbe"
+## Whether the native probe is used when present (the parity suite turns it on).
+## Off by default: measured slower than this script (examples/steps_native_parity prints both; every engine
+## access costs more through the extension than from GDScript, and the pass is all engine accesses).
+static var native_enabled: bool = false
+## These rules' own switch beside [member native_enabled].
+var use_native: bool = true
+static var _native_known: int = -1
+var _native: Object = null
+
+
+## The native probe [method is_surfing] asks (to be asked with [method native_args]), or null when the script answers.
+func native_probe() -> Object:
+	if not use_native or not native_enabled:
+		return null
+	if _native == null:
+		if _native_known < 0:
+			_native_known = 1 if ClassDB.class_exists(NATIVE_CLASS) else 0
+		if _native_known != 1 or get_script() != DotAudioSurfRules:
+			return null
+		_native = ClassDB.instantiate(NATIVE_CLASS)
+	return _native
+
+
+## [param out] filled with the native probe's arguments: probe, mask, min and max normal y.
+func native_args(out: PackedFloat64Array) -> PackedFloat64Array:
+	out.resize(4)
+	out[0] = probe
+	out[1] = float(mask)
+	out[2] = min_normal_y
+	out[3] = max_normal_y
+	return out
+
 
 ## Name, field, default, description and range of each cvar.
 static func cvar_specs() -> Array[Dictionary]:
@@ -115,6 +151,9 @@ func is_ramp_normal(normal: Vector3) -> bool:
 
 ## Whether [param body] is on a surf ramp now (a ray down; cached for the physics frame).
 func is_surfing(body: Node3D) -> bool:
+	var native := native_probe()
+	if native != null:
+		return native.call(&"is_surfing", body, probe, mask, min_normal_y, max_normal_y)
 	var frame := Engine.get_physics_frames()
 	var id := body.get_instance_id()
 	var cached: Variant = _seen.get(id)

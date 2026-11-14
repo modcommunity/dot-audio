@@ -66,6 +66,28 @@ var surf_rules: DotAudioSurfRules = null
 
 var _bodies: Dictionary = {}
 
+## dot-sim's native tick ([code]DotSimAudioSteps[/code]): the same steps to the bit (dot-audio's examples/steps_native_parity),
+## used when the extension is loaded, [member native_enabled] and [member use_native] are on and this node is a
+## plain [DotAudioFootsteps] (a subclass may change any part of a step). On the web, or with no library, the script runs.
+const NATIVE_CLASS := &"DotSimAudioSteps"
+## Whether the native tick is used when present (the parity suite turns it on).
+## Off by default: measured slower than this script (examples/steps_native_parity prints both; every engine
+## access costs more through the extension than from GDScript, and the pass is all engine accesses).
+static var native_enabled: bool = false
+## This node's own switch beside [member native_enabled].
+var use_native: bool = true
+static var _native_known: int = -1
+var _native: Object = null
+var _native_tun := PackedFloat64Array()
+var _native_surf_args := PackedFloat64Array()
+
+
+## Whether dot-sim's native audio tick is loaded and enabled.
+static func native_available() -> bool:
+	if _native_known < 0:
+		_native_known = 1 if ClassDB.class_exists(NATIVE_CLASS) else 0
+	return native_enabled and _native_known == 1
+
 
 ## Starts stepping for a body. [param opts]: `surface` (fixed surface for this body),
 ## `loudness` (scale), `grounded` (a Callable returning bool, for a body that is not a
@@ -110,11 +132,43 @@ func _physics_process(delta: float) -> void:
 		return
 	if manager == null:
 		manager = DotRegistry.get_node_service(DotAudioManager.SERVICE) as DotAudioManager
+	if use_native and native_available() and get_script() == DotAudioFootsteps:
+		_native_pass(delta)
+		return
 	for body: Variant in _bodies.keys():
 		if not is_instance_valid(body) or not (body as Node3D).is_inside_tree():
 			_bodies.erase(body)
 			continue
 		advance(body, delta)
+
+
+## [method _physics_process] natively: the same advance over [member _bodies] in place, the steps played here.
+func _native_pass(delta: float) -> void:
+	if _native == null:
+		_native = ClassDB.instantiate(NATIVE_CLASS)
+	_native_tun.resize(6)
+	_native_tun[0] = quiet_speed
+	_native_tun[1] = run_speed
+	_native_tun[2] = stride_walk
+	_native_tun[3] = stride_run
+	_native_tun[4] = walk_loudness
+	_native_tun[5] = landing_air_time
+	var surf: Variant = null
+	if surf_rules != null and surf_rules.mute_steps:
+		surf = surf_rules.native_probe()
+		if surf == null:
+			surf = surf_rules.is_surfing
+		else:
+			_native_surf_args = surf_rules.native_args(_native_surf_args)
+	var hear := hear_distance if manager != null else 0.0
+	var ear := manager.listener_position if manager != null else Vector3.ZERO
+	var steps: Array = _native.call(&"steps_pass", _bodies, delta, _native_tun, ear, hear, surf,
+		_native_surf_args, ground_probe, ground_mask)
+	for i in range(0, steps.size(), 2):
+		var body: Variant = steps[i]
+		var st: Dictionary = _bodies.get(body, {})
+		if not st.is_empty() and is_instance_valid(body):
+			_step(body, st, float(steps[i + 1]))
 
 
 ## One body, one physics frame. Public so a suite can step it with no physics running.
